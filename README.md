@@ -19,7 +19,7 @@ effects.
   - **Werewolf** 14 perks, 22 points, earned by feeding
 - **Vampirism and lycanthropy are mutually exclusive**, the way they are in
   game. Shouts are always available alongside either.
-- **Vampire stages 1–4.** Both the resistances and the drawbacks scale with the
+- **Vampire stages 1-4.** Both the resistances and the drawbacks scale with the
   stage, so it is a real choice rather than a status readout.
 - **Transformed-form toggle** for Vampire Lord and beast form, including the
   level-scaled bonuses each one gains at its breakpoints.
