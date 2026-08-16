@@ -14,16 +14,16 @@ effects.
 - **70 perk points** by level 100 (+1 Imperial, +1 Faithless, so 72 at most).
 - **Three power trees** on top of that, each with its own currency and cap, so
   they never compete with your level-up points:
-  - **Shouts** — 10 perks, 16 points, earned with dragon souls
-  - **Vampire** — 15 perks, 22 points, earned by feeding
-  - **Werewolf** — 14 perks, 22 points, earned by feeding
+  - **Shouts** 10 perks, 16 points, earned with dragon souls
+  - **Vampire** 15 perks, 22 points, earned by feeding
+  - **Werewolf** 14 perks, 22 points, earned by feeding
 - **Vampirism and lycanthropy are mutually exclusive**, the way they are in
   game. Shouts are always available alongside either.
 - **Vampire stages 1–4.** Both the resistances and the drawbacks scale with the
   stage, so it is a real choice rather than a status readout.
 - **Transformed-form toggle** for Vampire Lord and beast form, including the
   level-scaled bonuses each one gains at its breakpoints.
-- **Vampiric bloodlines** — each of the ten races reacts differently to
+- **Vampiric bloodlines** each of the ten races reacts differently to
   vampirism, applied automatically once you are a vampire of that race.
 - **Class starting spells** for the nine classes that begin with any.
 - **Live effects**: race powers, class effects, traits, standing stones,
@@ -57,7 +57,7 @@ loaded, and keeps your build in the address bar.
 Every number comes from the modlist's own plugin files. Nothing is
 hand-transcribed. The extractors that generate `data/*.js` parse the `.esp` /
 `.esm` / `.esl` binaries directly, and read compiled Papyrus out of the mods'
-BSAs where a fact exists only in a script — class skills and starting spells,
+BSAs where a fact exists only in a script class skills and starting spells,
 for instance, live nowhere else.
 
 Where a mod's own description text disagrees with its records, **the records
