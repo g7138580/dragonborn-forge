@@ -1,0 +1,3417 @@
+<meta charset="utf-8">
+<title>Dragonborn Forge</title>
+<style>
+/* ============================================================ tokens =====
+   NORDIC UI styling, reproduced from the mod's own art. Two distinct palettes
+   live in that mod and conflating them is the trap:
+
+   * The MENU CHROME (panels, labels, borders) is strictly monochrome. That is
+     what harvesting the .swf vector fills reports -- #000000 x375, #CCCCCC
+     x275, #FFFFFF x98, #BCBEC0 x56 -- and it drives the card/panel tokens.
+   * The CONSTELLATION is vividly coloured, and none of it lives in the SWFs:
+     it comes from the DDS art (intfullnebulapanarama*, intperkstars01) plus
+     Scaleform tinting.
+
+   So the chrome is grey and the tree keeps its colour.
+========================================================================= */
+:root{
+  --ground:#07080b;
+  --surface:#101216;
+  --surface-2:#181b20;
+  --line:#282c33;
+  --line-bright:#3b414a;
+  --ink:#e9ebed;          /* near #FFFFFF, the mod's text colour */
+  --ink-dim:#bcbec0;      /* #BCBEC0 -- straight from the SWF fills */
+  --ink-faint:#7d8288;
+  /* Historic name for a single semantic role: "chosen / owned / invested".
+     Here it is the warm star-white of an owned perk. */
+  --gold:#ffeec2;
+  --gold-dim:#f5c96b;
+  --gold-glow:rgba(245,201,107,.18);
+  --locked:#3a3f45;
+  --danger:#c05b52;
+  --good:#8fa9a0;
+
+  /* The three star states, taken from the in-game menu. Note the violet is
+     LOCKED (requirements unmet), not merely unbought -- a buyable perk burns
+     blue-white. Getting these two the wrong way round makes an unreachable
+     perk look like the most inviting thing on screen. */
+  --star-owned:#fff3d0;      /* bought: warm gold-white */
+  --star-owned-halo:#f0b942;
+  --star-avail:#dce8ff;      /* buyable now: cool blue-white */
+  --star-avail-halo:#8fb4f0;
+  --star-locked:#c77fe0;     /* requirements not met: violet */
+  --star-locked-halo:#9a5ab8;
+  --edge-line:#7fb8c8;       /* pale cyan connecting lines */
+
+  /* Category hues, muted to cold steel so the three groups stay
+     distinguishable without breaking the monochrome chrome. */
+  --combat:#9aa3ab;
+  --magic:#8f9db0;
+  --stealth:#9c98ab;
+
+  /* Sovngarde -- the face NORDIC UI is designed around -- ships as SWF glyph
+     tables, not a .ttf, so it cannot be used here. It is a clean, widely
+     spaced humanist serif rather than an inscriptional Roman, so the stack
+     leans on Cambria/Constantia (present on Windows) before falling back.
+     Letter-spacing does most of the work of matching its feel. */
+  --f-display:"Sovngarde","Cambria","Constantia","Palatino Linotype",
+              Georgia,"Times New Roman",serif;
+  --f-body:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-weight-display:500;
+
+  --tree-bg:var(--tex-neb);
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+}
+/* Nordic UI textures, decoded from the mod's DDS files by mktheme.py
+   and downscaled to data URIs so the page stays a single file that
+   works from file://. White-on-transparent masks, tinted by CSS. */
+:root{
+  --tex-star:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAC4ElEQVR42u3cwXGDMBBAUZfiUlQKpbgUl0Ip7oRccvIYJBACFr3DP2RyyMT7hIUNPKZpeqjfvAgAeBEAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAF+pZEAAdDbtrDIbeOQqD7xxBj4NPmWohhELS24pPK7v9ESLCkLcOPzUIgOCH9yMRAHAggDUDHDLtAcMm8EAEtQMfdkIBwAEAUuHwhwYBcIHVv8dqf2XaCsMe4GQAWwdeAyK3OQSgEYDvIawd/PtHW2AAcPDmr2bFv1e2FkBIBNEBfA+kduhzEL5/XtocAnDA8FPlih9nKgVxm71ApPP+JQBLK3Zp4Gt6L2wOwx4Foq/+IbPixx17Z84QQn4uEHH4SwDGRs1tDsMfBe6y+l87r/rPf78QLH1GEG4v0BuAz0xzv685CgDQ+Nx/bsdfMvCSungbAKAcwB5HAQAqP/vP7f5HAPoFMB4AYAQgDoDPDgEAwL3PBO4A4HXhPUACIOYmcGy0CQSg87MAAAIDKBm+TeAJHwS9G5wKdrH6e/gkcAuCFuf/vg088UxgLYItqz8BcP7lYGu+Ds59I1gCYAAg1l6g9kKQmnN/AA44CrS8FKzmcjAAGh8FclcBn3ktIAAXAFBzWfgvBGsvAwOg0RnB1lvAam4QGe60+iMCyN0d1OK2sDkE4YcfHUDNLeC1dwun6Qb3BUYA8NgIoMWt4XMInpNnBJ0GIE3bngxSev9/ybMBADgQQZr2exjUlmGnFQgAaAygFMX3wNYOvKSQw4/6FpArTe2fExjyRtBeAOwNofRvAHDQ8GtQPKd2zwYGoDGAvY4MRwRAoLeKPQYNwE0RbP37AFwQQenvu+rR6z8uAASAvAgAeBEAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAANBl+wO+1TSuCtwmuAAAAABJRU5ErkJggg==");
+  --tex-neb:url("data:image/png;base64,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");
+  --tex-stars:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAFUUlEQVR42u3d223cMBAFUJfAEliCSmAJW8KWoBJUwpbgTjcwYMCJsbYVayVxOOfj/BkJPJQuhw8lL/f7/QVWampwuumZf56CrleT/b7FmPfxku7JYAkAnYQA4JNrsgfMbJ904hgixQAdAPYOEAA2nxCSAoAR17I2YgXAMC+Th9ny4uxnsCgEZx/PVS+6DgAQAGidOTsASqCHrwz28BcvKzqA5x6LNTMsWAKAnf8kAXB0K+0Cjr2VKAEwZwkA5+z4UvHB2X+0ACjW5PAUt08hUKyH2GvJo74BJiMDRA97Hjo2AQAIAGCYAJiSr/0cDzJkAFizgQ4Am2AIAEAAgP0jAQDPMq8MgmLJJwDsIRD9G4EqALxofjdCB4A74F527AF4QfyOCADffIMAMKOCAECYRVCz1MDDDo9dM4S4gXbaQZ9dUDviGTPQcGyoVEsArNWNWRfjbEBiexUC4Sw9ffBkQCDxPpJB0IbjHoDvvwd2UQN0ALk7lLnDvQtjIwAIYLbMGfc7FBdjMM6Jbysq4vimnX4WSwAgawCUAT6YgNTLOUWAnPdE3vZyZgMElgCAAADXn1PVygCBDgCzIAIASHV7U3F0GOgAEAgIAEAAADm6tYyfkWqlQQeAQCTdsYcXzO/NxxgpgpcOHQDCgWQm/x4AJJ8QFIJoeypYAgACABAAgAAAJzGdB0CWo6hJLdABAAJAVwF9PsdeQNABSFoQACBIBQAk1AQA2Y4idSc6AEUAAYBZmdG9CgDt8NY/S4jpAECQCgBAAAACwLEMCAAg08dAgA4AEADg/r4AgA3qyjXzZcXP3dRTAGDzDAGAF/9Xf08RAD6IAQGg1Rv2d9dKCwAg0yS35fjFjAE6AEAAgH0hAdDJJRGIGGazABjPJdnve9MdxOlUvKBgCQD2EjJeaDP4bDEnDgAdABC7SzBIOFmJGwB1a/dikLD2twkIXk4BAES3CABAAKClRgAw8DGWIBYAgAAABICLLyAAgL4DwK40NugGC4C3ArYVP3cVAJC3AygCAHs79gAAAQAIALTlCACwoy8AQAB0EABrjvV8NAI6AOtdNUAAaMHWWNSAs+/fKIrZnhymR8+swmBz0BIAEACAANAiqgM59oAMpAAg8bPqJQFLAHQnCAAgVegrMOgA0Mq72ZjxerdBAx0AIACAv5dEVQAAAgAQAIAAyLdWwjHjiLc3FQPimywBAAEACAAs7RAAwJEBUM0GoAOwIwsCABAAwFGXrYoAwIkDAgAvOgIAEACAAAAEAPYXEAAgADAbIQCAZBNBr8VoO93Rrx604bX3l2lWCx3AGSmupbe0ClMjRQAdACAAgFRLmh4+XzS41sXoALyAIACAwwNgUQx0NToAQAAAAgAQAIAAwEYbAgAQALjJiADAZ8qWZnEnELMw6AAAAYBdewQAm81CAAEACABAAAACABAAMN6JThEAOGZUPwEACAAwYwsAQABgVkQAAAIAEACAAIBtqhoIAM7X1EAAAAIAx370/EwoohcbAcBJJptXWALk3rnWASAAAAHQ3ttigwM6AJs48B/PUhUAgAAABAAgAAABgM1LBAAIYAHgu3gEgGKCJQAgAGwcgQAABAAgAAABAAgAQAAAAgAQAP/8M15Xhf22PjB0B+AuOlgCAAIAOEoTAES3qMF+L7wAwEdfCABAAJgxEQCAAAD6VwUAWDIKAEAA2Ewz4/F17YoOAPgxAH71/4sDAkCrpQYEfEYMDOgAAAEACACIdqMNAQAIAEAAOP5xZMmPz4FCgA4gnGbWBEsAQACA40gBcD7/BRihA8BaFxJ1JAoOOgCtLAgAIJU/KpNatGhYFK4AAAAASUVORK5CYII=");
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+/* Type scale knob. Every font-size below is expressed in rem against this, so
+   the whole UI scales from one number. rem resolves against the ROOT element,
+   so it has to live on html -- setting it on body leaves rem on the browser's
+   16px default. 15px was the original body size; this is 15 * 1.25. */
+html{font-size:18.75px}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:1rem;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  /* A faint star field over the page ground, like the skill menu backdrop. */
+  background-image:var(--tex-stars);
+  background-size:520px;
+  background-repeat:repeat;
+  background-attachment:fixed;
+}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ====================================================== page shell ======
+   Outer layout: the centred column and the three-card top panel. */
+.wrap{display:flex;flex-direction:column;gap:var(--s5);
+      max-width:1400px;margin:0 auto;padding:var(--s5) var(--s5) var(--s6)}
+
+/* Everything that used to live in the side rail, now one panel across the top.
+   Three explicit columns rather than auto-fit: the cards have very different
+   natural heights, and letting them flow left a ragged edge with a large hole
+   on the right. Character (the only tall panel) takes the left column;
+   Attributes and Invested stack in the middle; Active Effects sits right.
+   align-items:start matters -- with stretch, every card grew to match the
+   tallest in its row, so Derived rendered at 521px for 60px of content. */
+.topbar{display:grid;gap:var(--s4);align-items:start;
+        grid-template-columns:1.15fr 1fr 1.15fr}
+.topbar .card{display:flex;flex-direction:column}
+.topbar .col{display:flex;flex-direction:column;gap:var(--s4);min-width:0}
+@media(max-width:1100px){ .topbar{grid-template-columns:1fr 1fr} }
+@media(max-width:760px){ .topbar{grid-template-columns:1fr} }
+
+/* Active Effects is the one card worth stretching: it holds free-form text of
+   unpredictable length, so filling the row's full height buys real reading
+   room instead of the empty space every other card would gain. The rest keep
+   align-items:start and end at their content. */
+.topbar .fxcard{align-self:stretch}
+.topbar .fxcard .fx{flex:1;max-height:none}
+
+/* Invested scrolls rather than stretching its column. */
+.inv{max-height:190px;overflow-y:auto}
+.fx{overflow-y:auto}
+
+/* ======================================================== masthead ======
+   Title, perk-point budget, modlist stats and the build actions. */
+.masthead{border-bottom:1px solid var(--line);
+          padding-bottom:var(--s3);margin-bottom:0;
+          display:flex;align-items:baseline;gap:var(--s4);flex-wrap:wrap}
+.masthead h1{font-size:1.7333rem;letter-spacing:.06em;text-transform:uppercase}
+.masthead h1 span{color:var(--gold)}
+.masthead .sub{color:var(--ink-faint);font-size:0.7333rem;letter-spacing:.04em;
+               margin-left:auto;text-align:right;line-height:1.5}
+.masthead .sub span{display:block}
+.masthead .toolbar{flex:none}
+
+/* budget, inline in the masthead ------------------------------------- */
+.masthead .budget{display:flex;align-items:center;gap:var(--s3);
+                  padding-left:var(--s4);border-left:1px solid var(--line)}
+.masthead .budget .big{font-family:var(--f-display);font-size:1.8667rem;
+                       line-height:1;color:var(--gold)}
+.masthead .budget .big.over{color:var(--danger)}
+.masthead .budget .of{display:flex;flex-direction:column;gap:2px;
+                      font-size:0.7333rem;color:var(--ink-faint);
+                      letter-spacing:.04em}
+.masthead .budget .of b{font-size:0.6667rem;letter-spacing:.14em;
+                        text-transform:uppercase;color:var(--ink-faint);
+                        font-weight:600}
+.masthead .budget .meter{display:block;width:120px;height:3px;
+                         background:var(--ground);border:1px solid var(--line);
+                         border-radius:99px;overflow:hidden}
+.masthead .budget .note{font-size:0.7333rem;color:var(--ink-faint)}
+.masthead .budget .note.warn{color:var(--danger)}
+
+/* =========================================================== cards ======
+   The panel cards: character fields, attributes, invested, effects. */
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:0;
+      padding:var(--s3) var(--s4) var(--s4)}
+.card h2{font-size:0.7333rem;letter-spacing:.16em;text-transform:uppercase;
+         color:var(--ink-faint);margin-bottom:var(--s2);font-weight:600}
+
+/* The budget meter fill; the bar itself is sized in the masthead block above. */
+.meter i{display:block;height:100%;background:var(--gold);
+         transition:width .25s ease,background .25s ease}
+.meter i.over{background:var(--danger)}
+
+/* level slider ------------------------------------------------------- */
+.lvl{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3)}
+.lvl label{font-size:0.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+.lvl output{font-family:var(--f-display);font-size:1.7333rem;color:var(--ink);margin-left:auto}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:none}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--line-bright);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--line-bright);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
+  border-radius:50%;background:var(--gold);margin-top:-6px;border:2px solid var(--ground);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid var(--ground);
+  border-radius:50%;background:var(--gold);cursor:pointer}
+
+/* selects ------------------------------------------------------------ */
+.field{margin-bottom:var(--s3)}
+.field:last-child{margin-bottom:0}
+/* Two columns of selects inside the Character card. */
+.fields{display:grid;gap:var(--s3) var(--s3);
+        grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.fields .field{margin-bottom:0}
+.field label{display:block;font-size:0.7333rem;letter-spacing:.13em;text-transform:uppercase;
+             color:var(--ink-faint);margin-bottom:var(--s1)}
+select{width:100%;background:var(--ground);color:var(--ink);border:1px solid var(--line);
+       border-radius:2px;padding:7px var(--s2);cursor:pointer}
+select:hover{border-color:var(--line-bright)}
+.hint{font-size:0.8rem;color:var(--ink-dim);margin-top:var(--s2);line-height:1.45}
+.hint em{color:var(--gold);font-style:normal}
+/* The class skill floors, spanning the card under the selects. */
+.hint.skills:not(:empty){margin-top:var(--s3);padding-top:var(--s3);
+                         border-top:1px solid var(--line)}
+.hint.skills:empty{display:none}
+
+/* attributes --------------------------------------------------------- */
+.attrs{display:flex;flex-direction:column;gap:var(--s2)}
+.attr{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:var(--s3)}
+.attr b{font-size:0.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.attr .bar{height:4px;background:var(--ground);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.attr .bar i{display:block;height:100%;transition:width .25s ease}
+.attr .v{font-size:0.9333rem;min-width:42px;text-align:right}
+.attr.h .bar i{background:#8d5a52}.attr.m .bar i{background:var(--magic)}.attr.s .bar i{background:var(--good)}
+.pick{display:flex;gap:var(--s1);margin-top:var(--s2)}
+.pick button{flex:1;border:1px solid var(--line);border-radius:2px;padding:5px 0;
+             font-size:0.7333rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);
+             background:var(--ground);transition:border-color .15s,color .15s}
+.pick button:hover:not(:disabled){border-color:var(--gold-dim);color:var(--ink)}
+.pick button:disabled{opacity:.3;cursor:not-allowed}
+/* All level-ups spent. NOT `disabled` -- a disabled button swallows the
+   contextmenu event, which would make the choice impossible to take back.
+   This dims the buy affordance while leaving right-click alive. */
+.pick button.full{opacity:.45}
+.pick button.full:hover{border-color:var(--line);color:var(--ink-faint)}
+/* The first level-up choice is worth double (20 vs 10). There is no badge on
+   the row or the button -- the attribute row is a tight 3-column grid and a
+   superscript there collided with the bar. The summary line under the buttons
+   carries it instead, along with the value tooltip. */
+.pick .cnt{color:var(--gold)}
+.lvlrow{display:flex;align-items:center;justify-content:space-between;
+        gap:var(--s2);margin-top:var(--s2)}
+.lvlups{font-size:0.8rem;color:var(--ink-faint)}
+/* More choices taken than the level allows. Nothing is auto-removed, so the
+   invalid state has to be visible. */
+.lvlups.over{color:var(--danger);font-weight:600}
+.mini{font-size:0.7333rem;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--ink-faint);border:1px solid var(--line);border-radius:2px;
+      padding:3px var(--s2);background:var(--ground);
+      transition:border-color .15s,color .15s}
+.mini:hover:not(:disabled){border-color:var(--danger);color:var(--danger)}
+.mini:disabled{opacity:.35;cursor:not-allowed}
+
+/* derived stats: a continuation of the attributes card ---------------- */
+.derived:not(:empty){display:grid;grid-template-columns:1fr auto;
+         gap:4px var(--s3);font-size:0.8667rem;
+         margin-top:var(--s3);padding-top:var(--s3);
+         border-top:1px solid var(--line)}
+/* Empty means "nothing to say" -- collapse instead of printing a placeholder. */
+.derived:empty{display:none}
+.derived .k{color:var(--ink-dim)}
+.derived .v{text-align:right;color:var(--ink)}
+.derived .v.bonus{color:var(--gold)}
+
+/* active effects ----------------------------------------------------- */
+.fx{display:flex;flex-direction:column;gap:var(--s3)}
+.fx .grp{display:flex;flex-direction:column;gap:3px}
+.fx .grp > b{font-size:0.6667rem;letter-spacing:.13em;text-transform:uppercase;
+             color:var(--ink-faint);font-weight:600}
+.fx .grp > span{font-size:0.8333rem;color:var(--ink-dim);line-height:1.45}
+.fx .grp > span em{color:var(--gold);font-style:normal}
+.fx .grp > b i{font-style:normal;color:var(--ink-faint);letter-spacing:.05em}
+/* A chosen-but-unmet effect: shown so the choice is visible, dimmed and
+   labelled so it is obviously not counted in the totals. */
+.fx .grp > span.inactive{opacity:.55}
+.fx .grp > span.inactive em{color:var(--ink-dim)}
+.fx .grp > span .warn{color:var(--danger);font-size:0.7333rem;
+                      font-weight:600;letter-spacing:.04em}
+.fx .none{color:var(--ink-faint);font-size:0.8667rem;font-style:italic}
+
+/* invested ----------------------------------------------------------- */
+.inv{display:flex;flex-direction:column;gap:6px}
+.inv .row{display:flex;justify-content:space-between;gap:var(--s2);font-size:0.8667rem}
+.inv .row b{font-weight:500;color:var(--ink-dim)}
+.inv .row span{color:#ffffff}
+.inv .none{color:var(--ink-faint);font-size:0.8667rem;font-style:italic}
+
+/* ================================================ buttons and chips =====
+   Toolbar buttons, skill cards and the perk-tree card shell. */
+.toolbar{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:0;padding:5px var(--s3);
+      font-size:0.8rem;letter-spacing:.06em;color:var(--ink-dim);background:var(--surface);
+      transition:border-color .15s,color .15s}
+.chip:hover{border-color:var(--line-bright);color:var(--ink)}
+.chip[aria-pressed=true]{border-color:var(--gold-dim);color:var(--gold);background:var(--gold-glow)}
+.chip.danger:hover:not(:disabled){border-color:var(--danger);color:var(--danger)}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.chip:disabled:hover{border-color:var(--line);color:var(--ink-dim)}
+
+/* skill cards -------------------------------------------------------- */
+/* One card per skill, grouped into the three category sections. The card is
+   the resting state; the constellation tree lives in a modal behind it. */
+.group{margin-bottom:var(--s6)}
+.group:last-child{margin-bottom:0}
+.grouphead{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4);
+           padding-bottom:var(--s2);border-bottom:1px solid var(--line)}
+.grouphead .cat{width:3px;height:20px;border-radius:2px;flex:none}
+.group.combat  .grouphead .cat{background:var(--combat)}
+.group.magic   .grouphead .cat{background:var(--magic)}
+.group.stealth .grouphead .cat{background:var(--stealth)}
+.grouphead h2{font-family:var(--f-display);font-size:1.0rem;letter-spacing:.16em;
+              text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.grouphead .tally{margin-left:auto;font-size:0.8rem;color:var(--ink-faint);
+                  letter-spacing:.06em}
+.grouphead .tally b{color:#ffffff;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Fixed 3 across: every category holds exactly 6 skills, so this lands as a
+   tidy 2x3 block per section rather than reflowing with the window. Collapses
+   on narrow screens, where 3 columns would squeeze the perk lists. */
+.cards{display:grid;gap:var(--s4);grid-template-columns:repeat(3,1fr)}
+@media(max-width:1000px){ .cards{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:680px){ .cards{grid-template-columns:1fr} }
+
+/* The card grid is grey chrome, so "invested" cannot be carried by hue the way
+   the tree does it. A lit left edge plus a lifted surface says it structurally
+   and survives at a glance. */
+.skillcard{display:flex;flex-direction:column;gap:var(--s3);text-align:left;
+  background:#0e1013;border:1px solid var(--line);border-radius:0;
+  border-left:3px solid transparent;
+  padding:var(--s4);width:100%;
+  transition:border-color .15s,background .15s,transform .15s}
+.skillcard:hover{border-color:var(--line-bright);background:var(--surface-2);
+                 transform:translateY(-1px)}
+.skillcard.invested{border-color:var(--line-bright);
+                    border-left-color:#ffffff;background:#15181c}
+.skillcard.invested:hover{border-color:var(--ink-dim);border-left-color:#ffffff}
+
+.skillcard .top{display:flex;align-items:baseline;gap:var(--s2)}
+.skillcard h3{font-size:1.0667rem;letter-spacing:.04em;color:var(--ink)}
+.skillcard.invested h3{color:#ffffff}
+.skillcard .lv{margin-left:auto;text-align:right;line-height:1.15;flex:none}
+.skillcard .lv b{display:block;font-family:var(--f-display);font-size:1.2667rem;
+                 color:var(--ink-faint)}
+.skillcard.invested .lv b{color:#ffffff}
+.skillcard .lv b.base{color:var(--ink-faint)}
+.skillcard .lv i{font-style:normal;font-size:0.6333rem;letter-spacing:.11em;
+                 text-transform:uppercase;color:var(--ink-faint)}
+
+/* The chosen perks -- the whole point of the card. */
+.chosen{display:flex;flex-direction:column;gap:5px;min-height:20px}
+.chosen .p{display:flex;align-items:baseline;gap:var(--s2);font-size:0.8333rem;
+           color:var(--ink-dim);line-height:1.35}
+/* A small diamond, echoing the mod's list markers. */
+.chosen .p .bullet{width:4px;height:4px;border-radius:0;background:var(--gold);
+                   flex:none;transform:translateY(-2px) rotate(45deg)}
+.chosen .p .rk{margin-left:auto;font-size:0.6667rem;color:var(--ink-faint);
+               font-variant-numeric:tabular-nums;flex:none}
+.chosen .none{font-size:0.8rem;color:var(--ink-faint);font-style:italic}
+
+.skillcard .foot{display:flex;align-items:center;gap:var(--s2);
+                 margin-top:auto;padding-top:var(--s2);
+                 border-top:1px solid var(--line);
+                 font-size:0.7333rem;letter-spacing:.08em;text-transform:uppercase;
+                 color:var(--ink-faint)}
+.skillcard .foot .pts{color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.skillcard.invested .foot .pts{color:#ffffff}
+.skillcard .foot .open{margin-left:auto;color:var(--ink-faint);transition:color .15s}
+.skillcard:hover .foot .open{color:var(--gold)}
+
+/* =========================================================== modal ======
+   Shared dialog shell: scrim, sheet, header, footer nav. */
+.modal{position:fixed;inset:0;z-index:300;display:none;
+       align-items:flex-start;justify-content:center;
+       padding:var(--s4);overflow-y:auto}
+.modal.show{display:flex}
+.modal .scrim{position:fixed;inset:0;background:rgba(6,7,11,.72)}
+/* Fill the viewport without exceeding it: the sheet is exactly as tall as the
+   window, and the canvas takes whatever height the header and footer leave.
+   Height is *capped* rather than merely set, so the tree never overflows into
+   a scroll -- the whole tree should be visible at once. */
+.modal .sheet{position:relative;z-index:1;width:100%;max-width:1600px;border-radius:0;
+  height:calc(100vh - var(--s4) * 2);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line-bright);border-radius:3px;
+  box-shadow:0 24px 64px rgba(0,0,0,.6)}
+.modal .sheet > header{display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s3) var(--s4);border-bottom:1px solid var(--line);
+  background:var(--surface-2);position:sticky;top:0;z-index:2}
+.modal .sheet > header .cat{width:3px;height:26px;border-radius:2px;flex:none}
+.modal .sheet.combat  > header .cat{background:var(--combat)}
+.modal .sheet.magic   > header .cat{background:var(--magic)}
+.modal .sheet.stealth > header .cat{background:var(--stealth)}
+.modal .sheet h3{font-size:1.1333rem;letter-spacing:.05em}
+.modal .sheet .lv{text-align:right;line-height:1.2;margin-left:var(--s3)}
+.modal .sheet .lv b{display:block;font-family:var(--f-display);font-size:1.2667rem;color:var(--gold)}
+.modal .sheet .lv b.base{color:var(--ink-faint)}
+.modal .sheet .lv i{font-style:normal;font-size:0.6667rem;letter-spacing:.11em;
+                    text-transform:uppercase;color:var(--ink-faint)}
+/* Budget stays visible while spending -- it is the constraint being managed. */
+.modal .bank{margin-left:auto;text-align:right;line-height:1.2}
+.modal .bank b{display:block;font-family:var(--f-display);font-size:1.2667rem;color:var(--gold)}
+.modal .bank b.over{color:var(--danger)}
+.modal .bank i{font-style:normal;font-size:0.6667rem;letter-spacing:.11em;
+               text-transform:uppercase;color:var(--ink-faint)}
+.modal .close{font-size:1.4667rem;line-height:1;color:var(--ink-faint);
+              padding:0 var(--s2);transition:color .15s}
+.modal .close:hover{color:var(--ink)}
+.modal .note{padding:0 var(--s4) var(--s3);font-size:0.8rem;color:var(--ink-faint);
+             min-height:1.2em;text-align:center}
+.modal .note.warn{color:var(--danger)}
+.modal .nav{display:flex;align-items:center;
+            padding:var(--s2) var(--s4) var(--s3);
+            border-top:1px solid var(--line)}
+.modal .sheet > header{flex-wrap:wrap}
+.modal .sheet > header h3{margin-right:var(--s2)}
+.modal .nav .hintkeys{margin-left:auto;font-size:0.7333rem;color:var(--ink-faint);
+                      letter-spacing:.05em;text-transform:none}
+/* ========================================================= chooser ======
+   The six character-field rows and the picker dialog they open. An unchosen
+   row differs from a chosen one only by ink colour, which is the whole
+   affordance. */
+.fieldrows{display:flex;flex-direction:column;margin-top:var(--s3);
+           border-top:1px solid var(--line)}
+.fieldrow{display:flex;align-items:baseline;gap:var(--s3);width:100%;
+          text-align:left;padding:var(--s2) var(--s1);
+          border-bottom:1px solid var(--line);transition:background .12s}
+.fieldrow:hover{background:var(--surface-2)}
+.fieldrow .k{flex:none;width:8.2rem;font-size:0.7333rem;letter-spacing:.13em;
+             text-transform:uppercase;color:var(--ink-faint)}
+.fieldrow .v{flex:1;min-width:0;color:var(--ink)}
+.fieldrow .v.unset{color:var(--ink-faint);font-style:italic}
+/* The disclosure caret is generated, so the six rows carry no repeated markup.
+   `order` keeps it last on the FIRST line: the devotion row wraps its hint to
+   a second line, and without this the caret is what wraps instead, leaving a
+   stray "›" sitting alone under the row. */
+.fieldrow::after{content:"›";flex:none;color:var(--ink-faint);
+                 font-size:1.1rem;line-height:1;order:1}
+.fieldrow:hover::after{color:var(--gold-dim)}
+.fieldrow{flex-wrap:wrap}
+/* The hint takes a full second line, but only when it actually has text --
+   an empty one must not add height to the row. */
+.fieldrow .hint{order:2;flex-basis:100%;margin:0 0 0 8.2rem;
+                font-size:0.7333rem}
+.fieldrow .hint:empty{display:none}
+/* The survival row is a checkbox, not a chooser: no caret, and the whole row
+   is the label so the click target matches the other five. */
+.fieldrow.toggle{cursor:pointer}
+.fieldrow.toggle::after{content:none}
+.fieldrow.toggle[hidden]{display:none}
+.fieldrow.toggle .v{display:flex;align-items:center;gap:var(--s2)}
+.fieldrow.toggle input{accent-color:var(--gold-dim);width:15px;height:15px;
+                       margin:0;cursor:pointer}
+.fieldrow.toggle .v span{color:var(--ink-faint)}
+.fieldrow.toggle.on .v span{color:var(--ink)}
+/* A survival penalty is a subtraction, so it reads in the danger colour --
+   the same encoding the perk-budget warning uses. */
+.derived .pen{color:var(--danger)}
+.derived .sub{font-size:0.7333rem;color:var(--ink-faint)}
+
+/* The chooser sheet is sized to its content, unlike the tree sheet which is
+   pinned to the viewport -- a 10-item race list should not be 100vh tall. */
+.modal.chooser .sheet{height:auto;max-height:calc(100vh - var(--s4)*2);
+                      max-width:1080px}
+.modal.chooser .sheet h3{margin-right:auto}
+.cbody{display:grid;grid-template-columns:minmax(0,20rem) minmax(0,1fr);
+       min-height:0;flex:1;overflow:hidden}
+@media(max-width:820px){
+  .cbody{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  .clist{max-height:34vh}
+}
+.clist{overflow-y:auto;border-right:1px solid var(--line);min-height:0;
+       background:var(--surface)}
+@media(max-width:820px){ .clist{border-right:none;border-bottom:1px solid var(--line)} }
+.copt{display:flex;align-items:center;gap:var(--s2);width:100%;text-align:left;
+      padding:var(--s2) var(--s4);border-bottom:1px solid var(--line);
+      color:var(--ink-dim);transition:background .12s,color .12s}
+.copt:hover{background:var(--surface-2);color:var(--ink)}
+.copt.on{background:var(--surface-2);color:var(--gold);
+         box-shadow:inset 3px 0 0 var(--gold-dim)}
+/* Marks the option currently committed to the build, so reopening a chooser
+   shows what you are changing away from. */
+.copt .cur{margin-left:auto;flex:none;color:var(--gold-dim);font-size:0.8rem}
+.copt .tag{margin-left:auto;flex:none;font-size:0.6667rem;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--ink-faint)}
+.copt.on .tag{color:var(--gold-dim)}
+.cfilter{padding:var(--s2) var(--s4);border-bottom:1px solid var(--line);
+         position:sticky;top:0;background:var(--surface);z-index:1}
+.cfilter input{width:100%;background:var(--ground);color:var(--ink);
+  border:1px solid var(--line);border-radius:0;padding:5px var(--s2);
+  font-family:inherit;font-size:0.8667rem}
+.cfilter input:focus{outline:none;border-color:var(--gold-dim)}
+
+.cdetail{overflow-y:auto;min-height:0;padding:var(--s4) var(--s5)}
+.cdetail h4{font-family:var(--f-display);font-weight:500;font-size:1.3333rem;
+            letter-spacing:.05em;color:var(--gold);margin:0 0 var(--s2)}
+.cdetail .desc{color:var(--ink-dim);margin-bottom:var(--s4);max-width:58ch}
+.cdetail .sect{font-size:0.6667rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-faint);margin:var(--s4) 0 var(--s2);padding-top:var(--s3);
+  border-top:1px solid var(--line)}
+.cdetail .sub{margin-bottom:var(--s3)}
+.cdetail .sub b{display:block;color:var(--ink);font-weight:600;font-size:0.9333rem}
+.cdetail .sub span{color:var(--ink-dim);font-size:0.8667rem}
+.cdetail .rows{display:flex;flex-direction:column;gap:var(--s1)}
+.cdetail .row{display:flex;align-items:baseline;gap:var(--s3);
+              font-size:0.8667rem;color:var(--ink-dim)}
+.cdetail .row .rk{flex:1;min-width:0}
+.cdetail .row .rv{flex:none;color:var(--ink);font-variant-numeric:tabular-nums}
+.cdetail .row .rv.up{color:var(--good)}
+.cdetail .row .rv.down{color:var(--danger)}
+.cdetail .foot{margin-top:var(--s4);padding-top:var(--s3);
+  border-top:1px solid var(--line);font-size:0.8rem;color:var(--ink-faint)}
+/* Shown before anything is highlighted. The page's generic `.empty` is a
+   dashed 48px-padded placeholder box, which reads as a missing panel here --
+   the detail pane is briefly empty on every open. Reset it to a plain line. */
+.cdetail .empty{color:var(--ink-faint);font-style:italic;
+                border:none;padding:0;margin:0;text-align:left}
+
+.cname{padding:var(--s6) var(--s5);display:flex;flex-direction:column;
+       gap:var(--s3);align-items:center;justify-content:center;text-align:center}
+.cname input{width:min(28rem,100%);background:var(--ground);color:var(--gold);
+  border:1px solid var(--line-bright);border-radius:0;
+  padding:var(--s3) var(--s4);font-family:var(--f-display);
+  font-size:1.6rem;letter-spacing:.04em;text-align:center}
+.cname input:focus{outline:none;border-color:var(--gold-dim)}
+.cname .sub{color:var(--ink-faint);font-size:0.8667rem}
+
+/* Reset confirmation. Narrower than a chooser -- it is a question, not a
+   browser -- and it names what would actually be lost. */
+.modal.chooser .sheet.ask{max-width:34rem}
+.cask{padding:var(--s5) var(--s5) var(--s4)}
+.cask p{margin:0 0 var(--s3);color:var(--ink-dim);line-height:1.5}
+.cask p:last-child{margin-bottom:0}
+.cask .lose{color:var(--ink);border-left:2px solid var(--danger);
+            padding-left:var(--s3);margin-bottom:var(--s4)}
+.cask .lose b{color:var(--danger)}
+/* The page's generic `.empty` is a dashed, centred, 48px-padded placeholder
+   box. Here the text is a sentence in a paragraph, not a placeholder panel,
+   so that styling is reset -- same collision as `.cdetail .empty`. */
+.cask .lose.empty{border:none;border-left:2px solid var(--line-bright);
+                  padding:0 0 0 var(--s3);text-align:left;
+                  color:var(--ink-faint);font-style:italic}
+.cask .keep{font-size:0.8rem;color:var(--ink-faint)}
+.chip.danger.solid{border-color:var(--danger);color:var(--danger)}
+
+.modal.chooser .nav{gap:var(--s3)}
+.modal.chooser .nav .right{margin-left:auto;display:flex;gap:var(--s2);
+                           align-items:center}
+/* The confirm line for a pick that costs a perk point; it replaces the note
+   row rather than adding a layer, so the sheet does not jump. */
+.cwarn{padding:var(--s2) var(--s4) var(--s3);font-size:0.8rem;
+       color:var(--danger);border-top:1px solid var(--line);
+       background:rgba(192,91,82,.07)}
+.cwarn b{color:var(--danger)}
+.chip.go{border-color:var(--gold-dim);color:var(--gold)}
+.chip.go:hover:not(:disabled){background:var(--gold-glow)}
+
+.tree{background:var(--surface);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.tree.dim{opacity:.42}
+.tree > header{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);
+               border-bottom:1px solid var(--line);background:var(--surface-2)}
+.tree > header .cat{width:3px;height:26px;border-radius:2px;flex:none}
+.tree.combat  header .cat{background:var(--combat)}
+.tree.magic   header .cat{background:var(--magic)}
+.tree.stealth header .cat{background:var(--stealth)}
+.tree h3{font-size:1.0667rem;letter-spacing:.05em}
+.tree .lv{margin-left:auto;text-align:right;line-height:1.2}
+.tree .lv b{display:block;font-family:var(--f-display);font-size:1.2667rem;color:var(--gold)}
+.tree .lv b.base{color:var(--ink-faint)}
+.tree .lv i{font-style:normal;font-size:0.6667rem;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* --- constellation view --------------------------------------------- */
+.canvas{position:relative;padding:var(--s4)}
+.canvas svg{display:block;margin:0 auto;width:100%;height:auto;overflow:visible}
+
+/* The tree only ever renders inside the modal, where it gets the whole sheet: it fills the space the header
+   and footer leave and is centred in it. Labels and node radii are in SVG
+   units, so scaling enlarges them together and the tree stays legible -- which
+   is the point of the bigger window.
+   min-height:0 lets this flex item shrink below its content, without which the
+   SVG would push the sheet taller than the viewport and clip the top row. */
+.modal .canvas{flex:1;min-height:0;display:flex;
+               align-items:center;justify-content:center;
+               padding:var(--s2) var(--s4)}
+/* preserveAspectRatio keeps the tree undistorted, so bounding it on both axes
+   makes it fit the box entirely. */
+.modal .canvas svg{width:100%;height:100%;max-width:none;max-height:none}
+.pnode{cursor:pointer}
+.pnode .halo{fill:none;stroke:none}
+.pnode .core{transition:fill .18s}
+.pnode.maxed .core{fill:var(--ground)}
+.pnode:focus-visible{outline:none}
+.pnode:focus-visible .halo{stroke:var(--gold);stroke-width:2;fill:none}
+.pnode .glow{fill:var(--gold);opacity:0;transition:opacity .2s}
+.starglow{opacity:0;pointer-events:none;transition:opacity .2s}
+.rankdots{pointer-events:none}
+/* An unbought pip used to be --line-bright (#3b414a), which disappears against
+   the brighter parts of the nebula. It is now a light grey with a dark halo,
+   so it reads on both the dark field and the lit clouds. The halo is a stroke
+   rather than a shadow so it scales with the tree. */
+.rankdots circle{fill:#c8ccd2;stroke:rgba(6,7,11,.85);stroke-width:1.5}
+.rankdots circle.on{fill:var(--gold);stroke:rgba(6,7,11,.9)}
+
+/* ==================================================== the constellation ==
+   The tree is where the mod's colour lives, so it is styled apart from the
+   grey chrome above.
+========================================================================= */
+/* The mod's real nebula panorama (intfullnebulapanarama01.dds), kept in
+   colour. The first attempt used a white alpha mask at .07 opacity, which
+   threw away the teal/mauve/green that defines the backdrop; this carries the
+   art's own hues at a strength you can actually see, with a vignette to hold
+   the centre dark enough for the stars to read against. */
+.modal .canvas{position:relative;background:#05060a}
+.modal .canvas::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  /* Two passes of the same panorama at different scales and offsets. The art
+     is three discrete clouds, so a single pass leaves half the field empty;
+     layering a large soft copy under a smaller one fills the frame the way the
+     in-game backdrop does, without needing more texture data. */
+  background-image:var(--tree-bg),var(--tree-bg);
+  background-size:auto 150%, auto 260%;
+  background-position:72% 40%, 8% 62%;
+  background-repeat:repeat-x, repeat-x;
+  opacity:.5;
+  filter:saturate(1.3) blur(1px);
+}
+/* A dark wash over the middle so bright nodes stay legible on top of cloud. */
+.modal .canvas::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 62%,
+             rgba(3,4,8,.72) 0%, rgba(3,4,8,.45) 45%, rgba(3,4,8,.82) 100%);
+}
+.modal .canvas svg{position:relative;z-index:1}
+
+/* Nodes are stars, not rings: no outline, a filled core, and a coloured glow.
+   Three states, distinguished by HUE as much as brightness:
+     locked (requirements unmet) -> violet
+     available (buyable now)     -> blue-white
+     owned                       -> warm gold-white
+   Hue is what lets you read the whole tree at a glance without inspecting
+   each node. */
+.pnode .ring{
+  fill:var(--star-avail);stroke:none;
+  filter:drop-shadow(0 0 4px var(--star-avail-halo))
+         drop-shadow(0 0 9px var(--star-avail-halo));
+}
+.pnode .core{fill:#fff;opacity:.7}
+.pnode.locked .ring{
+  fill:var(--star-locked);
+  filter:drop-shadow(0 0 4px var(--star-locked-halo))
+         drop-shadow(0 0 10px var(--star-locked-halo));
+}
+.pnode.locked .core{opacity:.45}
+.pnode.taken .ring{
+  fill:var(--star-owned);
+  filter:drop-shadow(0 0 5px var(--star-owned-halo))
+         drop-shadow(0 0 14px var(--star-owned-halo));
+}
+.pnode.taken .core{fill:#fff;opacity:1}
+.pnode:hover .ring{stroke:none}
+/* The star flare from intperkstars01.dds, tinted gold, on owned nodes only.
+   The default-theme circle glow is redundant beside it. */
+.pnode .glow{opacity:0}
+.pnode.taken .starglow{opacity:.9}
+/* Edges are pale cyan star-lines: faint when unowned, lit when both ends are. */
+.edge{stroke:#2f4550;stroke-width:1;opacity:.75}
+.edge.lit{stroke:var(--edge-line);opacity:.5}
+.edge.on{stroke:var(--edge-line);stroke-width:1.4;
+  opacity:1;filter:drop-shadow(0 0 2px var(--edge-line))}
+/* Labels track the same three states: locked recedes furthest, buyable is
+   readable, owned is brightest. */
+/* SVG user units, not rem: this text lives inside the viewBox and scales with
+   the tree. LABEL_SIZE in the script must match this font-size. */
+.plabel{font-size:15px;fill:#6b6478;text-anchor:middle;
+        pointer-events:none;transition:fill .18s}
+.plabel.avail{fill:#a8b6cc}
+.pnode.taken + .plabel,
+.plabel.taken{fill:var(--star-owned);font-weight:600}
+
+/* Display type: NORDIC UI's face is spaced small caps, so headings carry
+   generous tracking and the skill names are set in caps. */
+h1,h2,h3{font-weight:var(--f-weight-display);letter-spacing:.1em}
+.masthead h1{letter-spacing:.14em}
+.skillcard h3,
+.modal .sheet h3{text-transform:uppercase;letter-spacing:.09em}
+
+/* hover card */
+.tipwrap{position:relative}
+/* Above the modal (z 300) -- the tree it describes now lives inside one. */
+.tip{position:fixed;z-index:400;pointer-events:none;opacity:0;
+     transition:opacity .12s;
+     background:var(--surface-2);border:1px solid var(--line-bright);
+     border-radius:3px;padding:var(--s3);width:270px;
+     box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.tip.show{opacity:1;transform:none}
+.tip b{display:block;font-size:0.8667rem;color:var(--ink);margin-bottom:5px}
+.tip .ranks{display:flex;flex-direction:column;gap:5px}
+.tip .rk{display:grid;grid-template-columns:11px 22px 1fr;gap:6px;
+         align-items:baseline;font-size:0.8rem;color:var(--ink-faint);line-height:1.4}
+.tip .rk .mark{font-size:0.6rem;color:var(--line-bright)}
+.tip .rk .lv{font-size:0.6667rem;text-align:right;font-variant-numeric:tabular-nums}
+.tip .rk.owned{color:var(--ink-dim)}
+.tip .rk.owned .mark{color:var(--gold)}
+.tip .rk.next{color:var(--ink)}
+.tip .rk.next .mark{color:var(--gold-dim)}
+.tip .d{font-size:0.8rem;color:var(--ink-dim);line-height:1.45}
+.tip .r{font-size:0.7333rem;color:var(--ink-faint);margin-top:5px;letter-spacing:.04em}
+.tip .r .miss{color:var(--danger)}
+
+.perks{list-style:none;margin:0;padding:var(--s2) 0}
+.perk{display:grid;grid-template-columns:auto 1fr auto;gap:var(--s3);align-items:start;
+      padding:var(--s2) var(--s4);position:relative;cursor:pointer;
+      transition:background .12s}
+.perk:hover:not(.locked){background:var(--surface-2)}
+.perk.locked{cursor:not-allowed}
+.perk.locked .nm,.perk.locked .rq{color:var(--locked)}
+
+/* connector spine */
+.perk .node{position:relative;width:12px;display:flex;justify-content:center;padding-top:5px}
+.perk .node::before{content:"";position:absolute;top:0;bottom:-100%;width:1px;background:var(--line);left:50%}
+.perk:last-child .node::before{display:none}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line-bright);
+     background:var(--ground);position:relative;z-index:1;transition:all .18s}
+.perk.avail .dot{border-color:var(--gold-dim)}
+.perk.taken .dot{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+.perk.locked .dot{border-color:var(--locked)}
+
+.perk .body{min-width:0}
+.perk .nm{font-size:0.9333rem;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.perk.taken .nm{color:var(--gold)}
+.perk .desc{font-size:0.8333rem;color:var(--ink-dim);line-height:1.45;margin-top:2px}
+.perk .rq{font-size:0.7333rem;color:var(--ink-faint);letter-spacing:.05em;margin-top:3px}
+.perk .rq .miss{color:var(--danger)}
+
+/* rank pips */
+.pips{display:flex;gap:3px;align-items:center;padding-top:5px}
+.pip{width:7px;height:7px;border:1.5px solid var(--line-bright);border-radius:1px;transition:all .18s}
+.pip.on{background:var(--gold);border-color:var(--gold)}
+.perk.locked .pip{border-color:var(--locked)}
+
+.src{font-size:0.6333rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+     border:1px solid var(--line);border-radius:2px;padding:0 4px}
+
+.empty{padding:var(--s7) var(--s4);text-align:center;color:var(--ink-faint);
+       border:1px dashed var(--line);border-radius:3px}
+
+
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <!-- The masthead always reads "Dragonborn Forge". The character's name
+         goes in the browser title bar instead, where it labels the tab
+         without displacing the app's own name on the page. -->
+    <h1 id="pageTitle">Dragonborn <span>Forge</span></h1>
+    <!-- The budget is one number: it belongs in the masthead, not in a card
+         that stretches to match its neighbours. -->
+    <div class="budget" id="budget">
+      <span class="big num" id="ptsLeft">0</span>
+      <span class="of">
+        <b>Perk points</b>
+        <span class="num" id="ptsOf">of 0 remaining</span>
+        <span class="meter"><i id="ptsBar" style="width:0%"></i></span>
+      </span>
+      <span class="note" id="ptsNote"></span>
+    </div>
+    <!-- Modlist facts, moved up from the footer: they describe the data the
+         whole page is built from, so they belong beside the title. -->
+    <div class="sub">
+      <span id="stamp"></span>
+      <span id="rules"></span>
+    </div>
+    <div class="toolbar">
+      <button class="chip" id="share">Copy build link</button>
+      <button class="chip" id="printBuild">Print / PDF</button>
+      <button class="chip" id="textBuild">Copy as text</button>
+      <button class="chip danger" id="reset">Reset</button>
+    </div>
+  </header>
+
+  <!-- ==================================================== rail ========== -->
+  <section class="topbar">
+
+    <section class="card">
+      <h2>Character</h2>
+      <div class="lvl">
+        <label for="lvl">Level</label>
+        <output class="num" id="lvlOut">1</output>
+      </div>
+      <input type="range" id="lvl" min="1" max="100" value="1" step="1">
+      <!-- Six identical rows: name, the three creation choices, then the two
+           found in the world. Each opens its chooser rather than dropping a
+           list down, so every choice can show its own description, powers and
+           a live stat preview -- none of which fits in a <select>. -->
+      <div class="fieldrows" id="fieldrows">
+        <button class="fieldrow" data-choose="name">
+          <span class="k">Name</span><span class="v" id="fName"></span>
+        </button>
+        <button class="fieldrow" data-choose="race">
+          <span class="k">Race</span><span class="v" id="fRace"></span>
+        </button>
+        <button class="fieldrow" data-choose="cls">
+          <span class="k">Class</span><span class="v" id="fCls"></span>
+        </button>
+        <button class="fieldrow" data-choose="trait">
+          <span class="k">Trait</span><span class="v" id="fTrait"></span>
+        </button>
+        <button class="fieldrow" data-choose="stone">
+          <span class="k">Standing Stone</span><span class="v" id="fStone"></span>
+        </button>
+        <button class="fieldrow" data-choose="deity">
+          <span class="k">Devotion</span><span class="v" id="fDeity"></span>
+          <span class="hint" id="deityHint"></span>
+        </button>
+        <!-- Not a chooser: it is a yes/no, so it is a checkbox rather than a
+             row that opens a window with two options in it. -->
+        <label class="fieldrow toggle" id="survivalRow" hidden>
+          <span class="k">Survival</span>
+          <span class="v">
+            <input type="checkbox" id="survival">
+            <span id="survivalLabel">Off</span>
+          </span>
+          <span class="hint" id="survivalHint"></span>
+        </label>
+      </div>
+      <!-- Outside the grid: as a cell this wrapped to three lines and stretched
+           its whole row, which was most of the card's dead space. -->
+      <div class="hint skills" id="clsHint"></div>
+    </section>
+
+    <div class="col">
+    <section class="card">
+      <h2>Attributes</h2>
+      <div class="attrs">
+        <div class="attr h"><b>Health</b><div class="bar"><i id="hBar"></i></div><div class="v num" id="hVal">0</div></div>
+        <div class="attr m"><b>Magicka</b><div class="bar"><i id="mBar"></i></div><div class="v num" id="mVal">0</div></div>
+        <div class="attr s"><b>Stamina</b><div class="bar"><i id="sBar"></i></div><div class="v num" id="sVal">0</div></div>
+      </div>
+      <div class="pick">
+        <button data-at="h">Health <span class="cnt num" id="hCnt">0</span></button>
+        <button data-at="m">Magicka <span class="cnt num" id="mCnt">0</span></button>
+        <button data-at="s">Stamina <span class="cnt num" id="sCnt">0</span></button>
+      </div>
+      <div class="lvlrow">
+        <span class="lvlups" id="lvlups">&nbsp;</span>
+        <button class="mini" id="attrReset">Reset</button>
+      </div>
+      <!-- Derived stats were their own card, but they are the same idea (what
+           your character ends up with) and rarely run past a few rows, so a
+           separate card was mostly empty space. -->
+      <div class="derived" id="derived"></div>
+    </section>
+
+    <section class="card">
+      <h2>Invested</h2>
+      <div class="inv" id="inv"></div>
+    </section>
+    </div><!-- /col -->
+
+    <section class="card fxcard">
+      <h2>Active Effects</h2>
+      <div class="fx" id="fx"></div>
+    </section>
+
+  </section>
+
+  <!-- ==================================================== trees ========= -->
+  <main>
+    <div class="groups" id="groups"></div>
+  </main>
+
+</div>
+
+<div class="tip" id="tip"></div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="scrim" data-close></div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<!-- The chooser is a SECOND modal rather than a mode of the first: the tree
+     sheet is sized to the viewport and holds an SVG whose layout must not be
+     re-run, so sharing one element would mean tearing that down and rebuilding
+     it on every open. Two elements keep both bodies independent. -->
+<div class="modal chooser" id="cmodal" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+  <div class="scrim" data-cclose></div>
+  <div class="sheet" id="csheet"></div>
+</div>
+
+<script src="data/perks.js"></script>
+<script src="data/leveling.js"></script>
+<script src="data/character.js"></script>
+<script src="data/religion.js"></script>
+<script>
+"use strict";
+
+/* ============================================================ data ======
+   The four generated globals, plus a FormID lookup for every perk. */
+const P = window.PERK_DATA, L = window.LEVELING_DATA, C = window.CHARACTER_DATA;
+const R = window.RELIGION_DATA || {deities: []};
+
+// Perk lookup by formId, and which skill each belongs to.
+const PERK = new Map();
+P.skills.forEach(s => s.perks.forEach(p => PERK.set(p.formId, {p, skill: s})));
+
+// leveling.perLevel is 1-indexed by level.
+const perLevel = L.perLevel;
+const maxLevel = L.totals.maxLevel;
+
+/* =========================================================== state ======
+   S is the build (serialized to the URL). CH and ASK are UI-only. */
+const S = {
+  level: 1,
+  name: "",
+  // Race and class start UNSET, like the stone and the devotion. There is no
+  // sensible default race, and silently starting every build as the first
+  // entry in the list hides a decision that changes the whole character.
+  race: "",
+  cls:  "",
+  trait: "",
+  stone: "",
+  deity: "",
+  // Survival Mode. Only its carry-weight penalty is modelled -- hunger, cold
+  // and fast travel are gameplay state, not build choices.
+  survival: false,
+  ranks: new Map(),          // formId -> ranks bought (>=1)
+  // One entry per level-up taken, in order: "h" | "m" | "s". The Nth entry is
+  // the choice made on reaching level N+1, and the gain depends on THAT level
+  // (this modlist grants 20 at level 2 and 10 thereafter), so order matters.
+  picks: [],
+  skill: "",                 // last-viewed tree (skill editorId); "" = none
+  open: "",                  // skill whose tree modal is open; "" = closed
+};
+
+/* The chooser's own state, kept out of S because none of it is part of the
+   build -- it is never serialized to the hash. `pick` is the option under the
+   cursor in the list, which drives the detail pane and the live preview; it is
+   NOT committed until Choose/Next is pressed, so arrowing through the list
+   previews consequences without changing the build. */
+const CH = {
+  field: "",       // "" = closed; otherwise name|race|cls|trait|stone|deity
+  pick: "",        // highlighted option's id (or the typed name)
+  filter: "",
+  confirm: false,  // a cost was shown and needs a second press
+  lastFocus: null,
+};
+
+// Reset destroys a whole build with no undo, so it asks first. It reuses the
+// chooser's modal element rather than adding a third dialog pattern; `ask` is
+// the discriminator that decides which body renderChooser() draws.
+const ASK = {
+  open: false,
+  lastFocus: null,
+};
+
+// The six character choices, in display order. Everything that iterates or
+// clears them uses this rather than repeating the list.
+const CHOICE_FIELDS = ["name", "race", "cls", "trait", "stone", "deity"];
+
+// Clear every choice back to unset. Used by Reset and by a hash change, which
+// must not let a link that omits a field inherit the previous build's value.
+function clearChoices(){
+  CHOICE_FIELDS.forEach(f => { S[f] = ""; });
+  S.survival = false;
+}
+
+// The level slider and its readout always move together.
+function setLevelControl(level){
+  document.getElementById("lvl").value = level;
+  document.getElementById("lvlOut").textContent = level;
+}
+
+// The page behind a dialog must not scroll. Derived from state rather than set
+// by each open/close site: the tree modal and the chooser can be up at the same
+// time, so an unconditional unlock on either one's close freed the page while
+// the other was still showing.
+function syncScrollLock(){
+  document.body.style.overflow = (S.open || CH.field || ASK.open) ? "hidden" : "";
+}
+
+/* ========================================================= derived ======
+   Everything computed from S: budget, skill levels, prerequisites. */
+
+// Perk points granted by the character's level, plus script-granted bonuses.
+// Two exist, both calling Game.AddPerkPoints(1) at game start, so both are
+// available even at level 1: the Imperial race and the Faithless trait.
+function bonusPerkPoints(st_ = S){
+  const r = C.races.find(x => x.editorId === st_.race);
+  const t = (C.traits || []).find(x => x.trait === st_.trait);
+  return ((r && r.bonusPerkPoints) || 0) + ((t && t.bonusPerkPoints) || 0);
+}
+function pointsAvailable(st_ = S){
+  const row = perLevel[Math.min(st_.level, maxLevel) - 1];
+  return (row ? row.cumulativePerkPoints : 0) + bonusPerkPoints(st_);
+}
+function pointsSpent(){
+  let n = 0;
+  for (const r of S.ranks.values()) n += r;
+  return n;
+}
+
+// Skill levels are DERIVED: a skill is raised to the highest rank requirement
+// among the perks actually bought in it. Base floor is the modlist's starting
+// skill level (5 in this list, from the Apprentice addon).
+const BASE_SKILL = (C.startingSkillLevel && C.startingSkillLevel.value) || 5;
+
+// A class sets one major skill to 20 and four minors to 15 at creation, which
+// raises the floor those skills start from.
+function classSkillFloor(skillName){
+  const c = C.classes.find(x => x.class === S.cls);
+  if (!c || !c.skills) return BASE_SKILL;
+  const hit = c.skills.find(s => s.skill === skillName);
+  return hit ? Math.max(BASE_SKILL, hit.level) : BASE_SKILL;
+}
+
+function skillLevel(skill){
+  let lv = classSkillFloor(skill.name);
+  for (const p of skill.perks){
+    const r = S.ranks.get(p.formId);
+    if (!r) continue;
+    // rankSkillLevels[i] is the gate for rank i+1
+    const need = p.rankSkillLevels[Math.min(r, p.rankSkillLevels.length) - 1];
+    if (need > lv) lv = need;
+  }
+  return lv;
+}
+
+// Prereqs are satisfied per the perk's own condition logic. Adamant's
+// convergence perks (Mythic Smithing, Twin Secrets, Warmaster, Berserker,
+// Chemist, Resolve, Fists of Fury) OR their prerequisites together -- you need
+// EITHER branch, not both -- which the CTDA OR flag records.
+function prereqsMet(p){
+  if (!p.prerequisites.length) return true;
+  const owned = q => (S.ranks.get(q.formId) || 0) > 0;
+  return p.prerequisiteLogic === "any"
+    ? p.prerequisites.some(owned)
+    : p.prerequisites.every(owned);
+}
+
+// A perk's prerequisites as text, joined by the logic it actually uses.
+const prereqNames = p =>
+  p.prerequisites.map(q => q.name)
+                 .join(p.prerequisiteLogic === "any" ? " or " : " + ");
+
+// Can we buy the NEXT rank of this perk right now?
+// Skill level is auto-derived, so it never blocks -- only prereqs and budget do.
+function canBuy(p){
+  const have = S.ranks.get(p.formId) || 0;
+  if (have >= p.ranks) return false;
+  if (!prereqsMet(p)) return false;
+  return pointsSpent() < pointsAvailable();      // hard budget
+}
+
+// Removing a rank must not orphan perks that depend on this one. Under "any"
+// logic a dependent survives as long as one of its other prerequisites is
+// still owned, so test the real condition rather than mere membership.
+function dependents(formId){
+  const out = [];
+  for (const [fid, r] of S.ranks){
+    if (!r) continue;
+    const e = PERK.get(fid);
+    if (!e) continue;
+    const p = e.p;
+    if (!p.prerequisites.some(q => q.formId === formId)) continue;
+    const stillOwned = q => q.formId !== formId && (S.ranks.get(q.formId) || 0) > 0;
+    const ok = p.prerequisiteLogic === "any"
+      ? p.prerequisites.some(stillOwned)
+      : p.prerequisites.every(stillOwned);
+    if (!ok) out.push(fid);
+  }
+  return out;
+}
+
+/* ============================================================ effects ===
+   The mods describe their own effects in player-facing text, and those
+   strings carry the magnitudes (Pilgrim/Apprentice ship <mag>-style
+   placeholders that we already resolved at extract time). Rather than
+   hand-transcribing ~100 numbers, parse the descriptions into modifiers.
+   Anything that doesn't match a pattern still displays as text -- it just
+   doesn't feed the math.
+======================================================================== */
+const FX_RULES = [
+  // flat attribute pools
+  [/(?:Your|You have) Health, Magicka, and Stamina (?:are|is) increased by (\d+)/i, m => [["health",+m[1]],["magicka",+m[1]],["stamina",+m[1]]]],
+  [/You have (\d+) extra Health, Magicka, and Stamina/i,                            m => [["health",+m[1]],["magicka",+m[1]],["stamina",+m[1]]]],
+  [/Your Health is increased by (\d+)/i,                                            m => [["health",+m[1]]]],
+  [/Your Magicka is increased by (\d+)/i,                                           m => [["magicka",+m[1]]]],
+  [/Your Stamina is increased by (\d+)/i,                                           m => [["stamina",+m[1]]]],
+  // secondary stats
+  [/Your Carry Weight is increased by (\d+)/i,                                      m => [["carry",+m[1]]]],
+  [/Your Armor Rating is increased by (\d+)/i,                                      m => [["armor",+m[1]]]],
+  // resistances (percent)
+  [/Your Magic Resistance is increased by (\d+)%/i,                                 m => [["magicRes",+m[1]]]],
+  [/Your Fire Resistance is increased by (\d+)%/i,                                  m => [["fireRes",+m[1]]]],
+  [/Your Frost Resistance is increased by (\d+)%/i,                                 m => [["frostRes",+m[1]]]],
+  [/Your Shock Resistance is increased by (\d+)%/i,                                 m => [["shockRes",+m[1]]]],
+  [/Your Poison Resistance is increased by (\d+)%/i,                                m => [["poisonRes",+m[1]]]],
+  [/Your Disease Resistance is increased by (\d+)%/i,                               m => [["diseaseRes",+m[1]]]],
+  [/Your Injury Resistance (?:and Disease Resistance )?(?:are|is) increased by (\d+)%/i, m => [["injuryRes",+m[1]]]],
+  [/Your Fire Resistance, Frost Resistance, and Shock Resistance are increased by (\d+)%/i,
+     m => [["fireRes",+m[1]],["frostRes",+m[1]],["shockRes",+m[1]]]],
+  // movement / misc
+  [/You(?:r Movement Speed is increased by| move) (\d+)% (?:faster|more)/i,          m => [["speed",+m[1]]]],
+  [/Your Movement Speed is increased by (\d+)%/i,                                   m => [["speed",+m[1]]]],
+  [/You have (\d+)% Spell Absorption/i,                                             m => [["spellAbsorb",+m[1]]]],
+
+  /* ---- penalties -------------------------------------------------------
+     Every rule above matches "increased by", so before these existed the
+     builder silently dropped every drawback in the modlist: Trollkin's fire
+     weakness, the Apprentice Stone's elemental weakness, and the Daedric
+     devotions' costs. A double-edged effect showed only its upside, which is
+     exactly backwards for deciding whether to take it.
+     Magnitudes are negative so they simply sum with the bonuses.
+  --------------------------------------------------------------------- */
+  [/Your Health is reduced by (\d+)/i,                                              m => [["health",-m[1]]]],
+  [/Your Magicka is reduced by (\d+)/i,                                             m => [["magicka",-m[1]]]],
+  [/Your Stamina is reduced by (\d+)/i,                                             m => [["stamina",-m[1]]]],
+  [/Your Magicka and Stamina are reduced by (\d+)/i,                                m => [["magicka",-m[1]],["stamina",-m[1]]]],
+  [/Your Carry Weight is reduced by (\d+)/i,                                        m => [["carry",-m[1]]]],
+  [/Your Armor Rating is reduced by (\d+)/i,                                        m => [["armor",-m[1]]]],
+  [/Your Magic Resistance is reduced by (\d+)%/i,                                   m => [["magicRes",-m[1]]]],
+  [/Your Fire Resistance is reduced by (\d+)%/i,                                    m => [["fireRes",-m[1]]]],
+  [/Your Frost Resistance is reduced by (\d+)%/i,                                   m => [["frostRes",-m[1]]]],
+  [/Your Shock Resistance is reduced by (\d+)%/i,                                   m => [["shockRes",-m[1]]]],
+  [/Your Poison Resistance is reduced by (\d+)%/i,                                  m => [["poisonRes",-m[1]]]],
+  [/Your Disease Resistance is reduced by (\d+)%/i,                                 m => [["diseaseRes",-m[1]]]],
+  [/Your Poison and Disease Resistance are reduced by (\d+)%/i,                     m => [["poisonRes",-m[1]],["diseaseRes",-m[1]]]],
+  [/Your (?:own )?Fire,? Frost,? and Shock Resistances? are reduced by (\d+)%/i,
+     m => [["fireRes",-m[1]],["frostRes",-m[1]],["shockRes",-m[1]]]],
+  [/Your Movement Speed is reduced by (\d+)%/i,                                     m => [["speed",-m[1]]]],
+];
+
+/* Clauses that describe a SITUATIONAL effect. The engine deliberately reports
+   these as text without folding them into the totals -- "while blocking" or
+   "when you do not control a zombie" is not a flat modifier, and counting it
+   would overstate the build. Applied to each clause, not the whole string, so
+   a description that pairs an unconditional bonus with a conditional penalty
+   still contributes the half that always applies. */
+const FX_CONDITIONAL = /\b(?:while|whenever|when(?:ever)? you|if you|unless|during|as long as|below|under half|near|nearby enemies)\b/i;
+
+const STAT_META = {
+  health:{label:"Health",unit:""},   magicka:{label:"Magicka",unit:""},
+  stamina:{label:"Stamina",unit:""}, carry:{label:"Carry Weight",unit:""},
+  armor:{label:"Armor Rating",unit:""}, speed:{label:"Movement Speed",unit:"%"},
+  magicRes:{label:"Magic Resist",unit:"%"}, fireRes:{label:"Fire Resist",unit:"%"},
+  frostRes:{label:"Frost Resist",unit:"%"}, shockRes:{label:"Shock Resist",unit:"%"},
+  poisonRes:{label:"Poison Resist",unit:"%"}, diseaseRes:{label:"Disease Resist",unit:"%"},
+  injuryRes:{label:"Injury Resist",unit:"%"}, spellAbsorb:{label:"Spell Absorption",unit:"%"},
+};
+// Order the derived panel reads in.
+const STAT_ORDER = ["carry","armor","magicRes","fireRes","frostRes","shockRes",
+                    "poisonRes","diseaseRes","injuryRes","spellAbsorb","speed"];
+
+// Parse one description into [[stat, amount], ...].
+/* Parse a description into flat modifiers.
+
+   This used to return on the FIRST matching rule, which silently dropped the
+   second half of every compound effect -- "Carry Weight +100. You move 20%
+   faster" contributed only the carry weight, and Trollkin ("Health Regen up,
+   but Fire Resistance down") contributed nothing at all because no rule
+   matched a reduction.
+
+   Now the text is split into clauses and every clause is matched
+   independently, so a sentence can yield several modifiers. Clauses that read
+   as situational are reported as text but kept out of the totals.
+
+   Rule order still matters within a clause: the combined patterns ("Fire,
+   Frost, and Shock") are listed before the single-stat ones so the broader
+   match wins, and only the first rule to match a given clause is applied. */
+function fxParse(text){
+  const t = strip(text || "");
+  if (!t) return [];
+  // Split on sentence and clause boundaries. ", but" separates the halves of a
+  // double-edged effect; full stops separate sentences.
+  //
+  // ", and" is NOT a safe split point on its own: the modlist writes stat
+  // lists with an Oxford comma ("Fire, Frost, and Shock Resistance are reduced
+  // by 25%"), and splitting there destroys the very phrase the combined rules
+  // match. So an ", and" only splits when what follows starts a new statement
+  // -- "you"/"your"/"sprinting" etc. -- rather than continuing a list.
+  const clauses = t
+    .split(/(?:\.\s+|,\s*but\s+|,\s*and\s+(?=you\b|your\b|sprinting\b|spells\b)|;\s*|\s+but\s+(?=your?\b))/i)
+    .map(s => s.trim()).filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for (const c of clauses){
+    if (FX_CONDITIONAL.test(c)) continue;          // situational: text only
+    // A clause can still carry two unrelated stats ("Your Stamina is
+    // increased by 50, you move 10% faster"), so every rule is tried. Rules
+    // are skipped when their match OVERLAPS text an earlier rule already
+    // consumed -- that is what stops the single-stat patterns from
+    // re-matching a combined "Fire, Frost, and Shock" phrase.
+    const taken = [];
+    for (const [re, fn] of FX_RULES){
+      const m = c.match(re);
+      if (!m) continue;
+      const from = m.index, to = m.index + m[0].length;
+      if (taken.some(([a, z]) => from < z && to > a)) continue;
+      taken.push([from, to]);
+      for (const mod of fn(m)){
+        const key = `${mod[0]}:${mod[1]}:${from}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(mod);
+      }
+    }
+  }
+  return out;
+}
+
+/* Resolve which devotion text is actually in effect for a deity.
+   Two deities (Tall Papa, and one other) ship a `variants[]` array keyed by
+   standing stone; the rest have a single `devotion`. The variant key is a bare
+   stone word ("Apprentice") while stones are records whose display name is
+   "The Apprentice Stone", so the join strips the article and the trailing
+   "Stone". Joining on a display name is exactly the pattern that silently
+   broke class skills before (see PROJECT.md), so this fails LOUDLY-ish: an
+   unmatched variant returns the base devotion rather than nothing, and
+   deityVariantUnresolved() reports the gap to the UI. */
+function stoneWord(stone){
+  if (!stone) return "";
+  return String(stone.name || "").replace(/^The\s+/i, "").replace(/\s+Stone$/i, "").trim();
+}
+function deityDevotion(dt, stoneEditorId){
+  if (!dt) return null;
+  const vs = dt.variants || [];
+  if (!vs.length) return dt.devotion || null;
+  const stone = C.standingStones.find(x => x.editorId === stoneEditorId);
+  if (!stone) return dt.devotion || null;
+  const w = stoneWord(stone).toLowerCase();
+  const hit = vs.find(v => String(v.variant || "").trim().toLowerCase() === w);
+  return hit || dt.devotion || null;
+}
+// Only some `variants[]` are stone-keyed. Tall Papa's 13 map 1:1 onto the 13
+// stones; "The Beast Stone" also has a variants array but its single key is
+// "Summon", which is not a stone at all. Treat a deity as stone-varying only
+// when its variant words actually intersect the stone list, so the UI does not
+// promise a stone choice that would change nothing.
+const STONE_WORDS = new Set(C.standingStones.map(s => stoneWord(s).toLowerCase()));
+function isStoneVaried(dt){
+  return (dt && dt.variants || []).some(
+    v => STONE_WORDS.has(String(v.variant || "").trim().toLowerCase()));
+}
+// True when this deity varies by stone but we could not resolve which variant
+// applies -- either no stone is chosen, or the names failed to join.
+function deityVariantUnresolved(dt, stoneEditorId){
+  if (!isStoneVaried(dt)) return false;
+  const stone = C.standingStones.find(x => x.editorId === stoneEditorId);
+  if (!stone) return true;
+  const w = stoneWord(stone).toLowerCase();
+  return !dt.variants.some(v => String(v.variant || "").trim().toLowerCase() === w);
+}
+
+// Everything currently applied to the character, as {source, label, text, mods}.
+// Takes the state to read so the chooser can evaluate a hypothetical pick
+// without mutating the build; defaults to the live state.
+function activeEffects(st_ = S){
+  const out = [];
+  const add = (source, label, text) => {
+    if (!text) return;
+    out.push({source, label, text: strip(text), mods: fxParse(text)});
+  };
+
+  const race = C.races.find(x => x.editorId === st_.race);
+  if (race) race.powers.forEach(p => add("Race", p.name, p.description));
+
+  const cls = C.classes.find(x => x.class === st_.cls);
+  if (cls) cls.effects.forEach(e => add("Class", e.name, e.description));
+
+  const tr = (C.traits || []).find(x => x.trait === st_.trait);
+  if (tr) add("Trait", tr.name, tr.description);
+
+  const st = C.standingStones.find(x => x.editorId === st_.stone);
+  if (st) add("Stone", st.name, st.description);
+
+  const dt = R.deities.find(x => x.deity === st_.deity);
+  // A deity whose devotion varies by standing stone resolves against the stone
+  // actually chosen. Previously the UI only counted the variants and always
+  // showed the base text, so Tall Papa's devotion was never the one in effect.
+  const dv = dt ? deityDevotion(dt, st_.stone) : null;
+  // A devotion only applies with RANK 2 of the Pilgrim perk. Without it the
+  // deity is still a chosen allegiance, but it grants nothing -- so the effect
+  // is listed as inactive rather than folded into the totals.
+  if (dv){
+    if (pilgrimRank(st_) >= 2) add("Devotion", dv.name, dv.description);
+    else out.push({source: "Devotion", label: dv.name, text: strip(dv.description),
+                   mods: [], inactive: "needs Pilgrim rank 2"});
+  }
+  // The shrine blessing used to live only in the deity hint. It is temporary
+  // (8h) rather than permanent, so it is listed but kept out of the maths --
+  // fxParse would otherwise fold it into the derived totals.
+  if (dt && dt.blessing){
+    out.push({source: "Devotion", label: `Shrine: ${dt.blessing.name}`,
+              text: strip(dt.blessing.description), mods: []});
+  }
+
+  // Bought perks contribute to the DERIVED STATS but are deliberately not
+  // listed in Active Effects: the perks a build owns are already shown by the
+  // skill cards and the Invested panel, and 70 points' worth of them buried
+  // the five character choices this card exists to show.
+  //
+  // `hidden` keeps them out of renderEffects() and both exports while still
+  // feeding fxTotals(). Without this, Strong Back and Deep Pockets never moved
+  // carry weight -- no perk touched any derived stat.
+  //
+  // The text used is the description of the rank actually OWNED: rank 2
+  // usually restates the total rather than adding to rank 1 ("increased by
+  // 50" then "increased by 100"), so summing the ranks would double-count.
+  for (const [fid, rank] of st_.ranks){
+    const e = PERK.get(fid);
+    if (!e) continue;
+    const {p, skill} = e;
+    const descs = p.rankDescriptions && p.rankDescriptions.length
+      ? p.rankDescriptions : [p.description];
+    const text = descs[Math.min(rank, descs.length) - 1] || p.description;
+    if (!text) continue;
+    out.push({
+      source: "Perk",
+      hidden: true,
+      label: p.ranks > 1 ? `${p.name} (${rank}/${p.ranks})` : p.name,
+      skill: skill.name,
+      text: strip(text),
+      mods: fxParse(text),
+    });
+  }
+
+  return out;
+}
+
+/* ----------------------------------------------------------- pilgrim ----
+   Pilgrim (Adamant, Restoration) is a 2-rank perk gated at Restoration 30/60.
+   A devotion only takes effect at RANK 2 -- rank 1 only strengthens the
+   temporary shrine blessings. Without rank 2 a chosen deity is an allegiance
+   that grants nothing, so activeEffects() lists it as inactive and keeps it
+   out of the derived totals.
+
+   Resolved by FormID, not by name: display names are not stable across mod
+   updates, and joining on one is the bug PROJECT.md documents for class
+   skills. The editor ID is used only to FIND the FormID once, at load.
+======================================================================== */
+const PILGRIM_FID = (() => {
+  for (const s of P.skills)
+    for (const p of s.perks)
+      if (p.editorId === "MAG_Pilgrim30") return p.formId;
+  return null;
+})();
+const pilgrimRank = (st_ = S) =>
+  PILGRIM_FID ? (st_.ranks.get(PILGRIM_FID) || 0) : 0;
+
+/* ---------------------------------------------------------- survival ----
+   Survival Mode subtracts a flat amount from carry weight while enabled. The
+   magnitude is extracted from the winning override of the ability spell
+   (Starfrost's MAG_StarfrostCarryWeightSpell, 100 here -- vanilla ships 150
+   and Survival Mode Improved lowers it), so a mod retune is picked up without
+   touching this file. Carry weight is the ONLY thing modelled: Survival's
+   hunger, cold and fast-travel rules are gameplay state, not build choices.
+======================================================================== */
+const SURVIVAL = (C.survival && C.survival.available) ? C.survival : null;
+const survivalCarryPenalty = (st_ = S) =>
+  (st_.survival && SURVIVAL && SURVIVAL.carryWeightPenalty) || 0;
+
+/* --------------------------------------------------- hypothetical state -
+   A shallow clone of the build with one field swapped, for previewing a pick
+   before it is committed. Only the fields the effects/budget maths read are
+   needed; `ranks` is shared by reference because nothing here mutates it. */
+function withField(field, value){
+  const h = {
+    level: S.level, race: S.race, cls: S.cls, trait: S.trait,
+    stone: S.stone, deity: S.deity, ranks: S.ranks, picks: S.picks,
+    survival: S.survival,
+  };
+  if (field in h) h[field] = value;
+  return h;
+}
+
+// Sum the parsed modifiers by stat.
+function fxTotals(effects){
+  const t = {};
+  effects.forEach(e => e.mods.forEach(([k,v]) => { t[k] = (t[k]||0) + v; }));
+  return t;
+}
+
+function attrTotal(st_ = S){
+  // Every race starts from the same base (the Player NPC_ record); racial
+  // differences arrive as powers, which the effects engine folds in below.
+  const a = C.baseAttributes || {health:100, magicka:100, stamina:100};
+  const base = {h: a.health || 0, m: a.magicka || 0, s: a.stamina || 0};
+  const lvlup = {h: 0, m: 0, s: 0};
+  st_.picks.forEach((k, i) => {
+    // Pick i is made on reaching level i+2, and uses that level's gain.
+    const lv = Math.min(i + 2, maxLevel);
+    const row = perLevel[lv - 1];
+    lvlup[k] += row ? (k === "h" ? row.healthPerChoice
+                     : k === "m" ? row.magickaPerChoice
+                     : row.staminaPerChoice) : 10;
+  });
+  // Flat pool bonuses from stone / trait / devotion / racial power.
+  const fx = fxTotals(activeEffects(st_));
+  const bonus = {h: fx.health || 0, m: fx.magicka || 0, s: fx.stamina || 0};
+  return {
+    h: base.h + lvlup.h + bonus.h,
+    m: base.m + lvlup.m + bonus.m,
+    s: base.s + lvlup.s + bonus.s,
+    base, lvlup, bonus,
+  };
+}
+const attrSpent = () => S.picks.length;
+const attrCount = k => S.picks.filter(x => x === k).length;
+const attrAvail = () => Math.max(0, Math.min(S.level, maxLevel) - 1);
+
+/* ======================================================== overspend =====
+   Lowering the level, or dropping a race or trait that granted a bonus perk
+   point, can leave a build spending more than it now has. Nothing is refunded
+   automatically: silently deleting perks the user chose is worse than showing
+   an invalid build, and the fix (raise the level again, or pick the bonus back
+   up) is one action away. The over-budget state is surfaced instead, and it is
+   the user's to resolve. */
+
+// How far past the budget the build is spending. 0 when legal.
+const perkOverspend = () => Math.max(0, pointsSpent() - pointsAvailable());
+
+// How many level-up choices are taken beyond what the level allows. 0 when
+// legal. Like perkOverspend, this is reported rather than corrected.
+const attrOverspend = () => Math.max(0, attrSpent() - attrAvail());
+
+/* ========================================================= actions ======
+   Mutations of S: buy, sell, clear a tree. */
+
+// Buying/selling inside the modal must not rebuild the SVG under the cursor --
+// that would drop hover and re-run layout on every click. Update the side
+// panels, then repaint just the node states in place.
+function afterSpend(){
+  const effects = activeEffects();
+  renderBudget();
+  renderAttrs();
+  renderDerived(effects);
+  renderEffects(effects);
+  renderInvested();
+  if (S.open) repaintTree(); else renderGroups();
+  saveHash();
+}
+
+// Refund every rank bought in one skill. Safe to drop wholesale: no perk in
+// this data depends on a perk in another tree (verified against perks.json --
+// 0 cross-tree prerequisites), so clearing a tree cannot orphan anything
+// outside it, and everything inside it is going away together.
+function clearTree(skill){
+  let freed = 0;
+  skill.perks.forEach(p => {
+    const r = S.ranks.get(p.formId) || 0;
+    if (r){ freed += r; S.ranks.delete(p.formId); }
+  });
+  return freed;
+}
+
+function buy(p){
+  if (!canBuy(p)) return;
+  S.ranks.set(p.formId, (S.ranks.get(p.formId) || 0) + 1);
+  afterSpend();
+}
+function sell(p){
+  const have = S.ranks.get(p.formId) || 0;
+  if (!have) return;
+  if (have === 1){
+    const deps = dependents(p.formId);
+    if (deps.length){
+      const names = deps.map(d => PERK.get(d).p.name).join(", ");
+      flash(`Refund ${names} first. ${p.name} unlocks it.`);
+      return;
+    }
+    S.ranks.delete(p.formId);
+  } else {
+    S.ranks.set(p.formId, have - 1);
+  }
+  afterSpend();
+}
+
+let flashTimer = null;
+// Message goes wherever the user is looking: the modal's own note line while a
+// tree is open, otherwise the budget card.
+function flash(msg){
+  const inModal = S.open && document.getElementById("modalNote");
+  const el = inModal || document.getElementById("ptsNote");
+  el.textContent = msg;
+  el.classList.add("warn");
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => {
+    el.classList.remove("warn");
+    el.innerHTML = "&nbsp;";
+    renderBudget();
+  }, 2600);
+}
+
+/* ========================================================== render ======
+   S to DOM. Each function owns one region and is safe to call alone. */
+function renderBudget(){
+  const avail = pointsAvailable(), spent = pointsSpent();
+  const left = avail - spent;
+  const big = document.getElementById("ptsLeft");
+  big.textContent = left;
+  big.classList.toggle("over", left < 0);
+  document.getElementById("ptsOf").textContent = `of ${avail} remaining`;
+  const bar = document.getElementById("ptsBar");
+  bar.style.width = (avail ? Math.min(100, spent / avail * 100) : 0) + "%";
+  bar.classList.toggle("over", left < 0);
+
+  // "of N remaining" already carries the spend; the note only earns its place
+  // when there is a bonus point to explain or the budget is blown. Overspend
+  // is never corrected automatically, so the note has to say what to do.
+  const note = document.getElementById("ptsNote");
+  const over = perkOverspend();
+  note.classList.toggle("warn", over > 0);
+  const bonus = bonusPerkPoints();
+  note.textContent = over
+    ? `${over} over budget at level ${S.level}: refund ${
+        over === 1 ? "a perk" : "some perks"} or raise the level`
+    : bonus ? `+${bonus} bonus`
+    : "";
+}
+
+function renderAttrs(){
+  const t = attrTotal(), avail = attrAvail(), spent = attrSpent();
+  const max = Math.max(t.h, t.m, t.s, 1);
+  // The first pick is worth double: it is made on reaching level 2, which is
+  // the only level in this modlist that grants 20 per choice (10 thereafter).
+  // Which attribute got it is a real build fact and was previously invisible,
+  // since the counters only showed how many picks each had.
+  const firstPick = S.picks[0] || "";
+  const firstGain = (perLevel[1] || {}).healthPerChoice || 20;
+  const laterGain = (perLevel[2] || {}).healthPerChoice || 10;
+
+  for (const [k, id] of [["h","h"],["m","m"],["s","s"]]){
+    const el = document.getElementById(id + "Val");
+    el.textContent = t[k];
+    el.title = `${t.base[k]} base + ${t.lvlup[k]} level-ups`
+             + (t.bonus[k] ? ` + ${t.bonus[k]} bonus` : "")
+             + (k === firstPick ? `\nFirst choice: +${firstGain} instead of +${laterGain}` : "");
+    document.getElementById(id + "Bar").style.width = (t[k] / max * 100) + "%";
+    document.getElementById(id + "Cnt").textContent = attrCount(k);
+  }
+  // NOT disabled when the level-ups are all spent: a disabled button swallows
+  // contextmenu too, so there would be no way to take a choice back. The click
+  // handler already refuses to overspend, and `full` just styles it as
+  // unavailable for buying while leaving right-click working.
+  document.querySelectorAll(".pick button").forEach(b => {
+    b.classList.toggle("full", spent >= avail);
+    b.title = spent >= avail
+      ? "No level-up choices left. Right-click to take one back"
+      : "Click to spend a level-up · right-click to take one back";
+  });
+  // Taking more choices than the level allows is reported, never corrected:
+  // lowering the level used to silently pop the newest picks. The line turns
+  // red and names the shortfall so the build reads as invalid until fixed.
+  const over = attrOverspend();
+  const LV = {h: "Health", m: "Magicka", s: "Stamina"};
+  const lvlups = document.getElementById("lvlups");
+  lvlups.textContent = over
+    ? `${spent} level-up choices used but only ${avail} available at level `
+      + `${S.level}: ${over} too many`
+    : `${spent} of ${avail} level-up choices used`
+      + (firstPick ? ` · first went to ${LV[firstPick]} (+${firstGain})` : "");
+  lvlups.classList.toggle("over", over > 0);
+
+  const ar = document.getElementById("attrReset");
+  if (ar) ar.disabled = !S.picks.length;
+}
+
+// Signed display for a modifier: "+50" / "-50".
+const fxSign = n => (n < 0 ? "-" : "+") + Math.abs(n);
+
+function renderDerived(effects){
+  const box = document.getElementById("derived");
+  const t = fxTotals(effects);
+  // Carry weight has a real base (RACE DATA), so show the total, not just the bonus.
+  const race = C.races.find(x => x.editorId === S.race);
+  const carryBase = (race && race.carryWeight) || 0;
+  const pen = survivalCarryPenalty(S);
+  const rows = STAT_ORDER
+    .filter(k => t[k] || (k === "carry" && (carryBase || pen)))
+    .map(k => {
+      const m = STAT_META[k];
+      if (k === "carry" && (carryBase || pen)){
+        const tot = carryBase + (t[k] || 0) - pen;
+        const parts = [];
+        if (t[k]) parts.push(`<span class="${t[k] < 0 ? "pen" : "bonus"}">${
+          fxSign(t[k])}</span>`);
+        if (pen) parts.push(`<span class="pen">-${pen} survival</span>`);
+        return `<div class="k">${esc(m.label)}</div>`
+             + `<div class="v num">${tot}`
+             + (parts.length ? ` <span class="sub">(${parts.join(" ")})</span>` : "")
+             + `</div>`;
+      }
+      // Penalties are real: a negative total must read as a loss, not as
+      // "+-50". Fire Resistance -50% is exactly what Trollkin costs.
+      return `<div class="k">${esc(m.label)}</div>`
+           + `<div class="v num ${t[k] < 0 ? "pen" : "bonus"}">${
+               fxSign(t[k])}${m.unit}</div>`;
+    });
+  // Left empty when there is nothing to report; CSS collapses it, so the
+  // attributes card simply ends rather than carrying a placeholder line.
+  box.innerHTML = rows.join("");
+}
+
+function renderEffects(effects){
+  const box = document.getElementById("fx");
+  // Perks are marked `hidden`: they feed the derived totals but are not listed
+  // here, since the skill cards and the Invested panel already show them.
+  const order = ["Race","Class","Trait","Stone","Devotion"];
+  const groups = order
+    .map(src => [src, effects.filter(e => e.source === src && !e.hidden)])
+    .filter(([, list]) => list.length);
+
+  // Tested on `groups`, not on `effects`: a build with perks bought but no
+  // character choices has effects to sum yet nothing to list here, and testing
+  // the raw array left the card blank instead of explaining itself.
+  if (!groups.length){
+    box.innerHTML = `<div class="none">No race, class, trait, stone, or devotion selected.</div>`;
+    return;
+  }
+
+  box.innerHTML = groups.map(([src, list]) =>
+    `<div class="grp"><b>${esc(src)}</b>` +
+    list.map(e =>
+      `<span${e.inactive ? ' class="inactive"' : ""}><em>${esc(e.label)}</em>` +
+      (e.inactive ? ` <b class="warn">${esc(e.inactive)}</b>` : "") +
+      `: ${esc(e.text)}</span>`).join("") +
+    `</div>`
+  ).join("");
+}
+
+function renderInvested(){
+  const box = document.getElementById("inv");
+  const rows = P.skills
+    .map(s => {
+      let pts = 0;
+      s.perks.forEach(p => { pts += S.ranks.get(p.formId) || 0; });
+      return {name: s.name, pts, lv: skillLevel(s)};
+    })
+    .filter(r => r.pts > 0)
+    .sort((a,b) => b.pts - a.pts);
+
+  if (!rows.length){
+    box.innerHTML = `<div class="none">No perks selected yet.</div>`;
+    return;
+  }
+  box.innerHTML = rows.map(r =>
+    `<div class="row"><b>${esc(r.name)} <span style="color:var(--ink-faint)">· ${r.lv}</span></b><span class="num">${r.pts}</span></div>`
+  ).join("");
+}
+
+function visibleSkills(){ return P.skills; }
+
+const CATEGORIES = ["Combat", "Magic", "Stealth"];
+
+const skillById = id => P.skills.find(s => s.editorId === id) || null;
+
+// Attribute selectors are built from editor IDs, which are plain identifiers
+// here, but quote defensively rather than trusting the data. Declared as a
+// function so it hoists above its callers.
+function cssEsc(s){
+  return (window.CSS && CSS.escape) ? CSS.escape(s)
+                                    : String(s).replace(/["\\]/g, "\\$&");
+}
+
+// Perks bought in a skill, as {perk, ranks}. This is what a card summarises,
+// so keep it in tree order (which extract_perks sorted by skill gate) -- the
+// list then reads as the order the character actually unlocked them.
+function chosenIn(skill){
+  const out = [];
+  skill.perks.forEach(p => {
+    const r = S.ranks.get(p.formId) || 0;
+    if (r > 0) out.push({p, r});
+  });
+  return out;
+}
+
+const spentIn = skill =>
+  skill.perks.reduce((n, p) => n + (S.ranks.get(p.formId) || 0), 0);
+
+function renderCard(s){
+  const pts = spentIn(s);
+  const chosen = chosenIn(s);
+  const lv = skillLevel(s);
+
+  const list = chosen.length
+    ? chosen.map(({p, r}) =>
+        `<div class="p"><span class="bullet"></span>` +
+        `<span class="nm">${esc(p.name)}</span>` +
+        (p.ranks > 1 ? `<span class="rk">${r}/${p.ranks}</span>` : "") +
+        `</div>`).join("")
+    : `<div class="none">No perks chosen.</div>`;
+
+  return `<button class="skillcard ${s.category.toLowerCase()}${pts ? " invested" : ""}"
+      data-skill="${esc(s.editorId)}"
+      aria-label="${esc(s.name)}, ${pts} point${pts === 1 ? "" : "s"} spent. Open perk tree.">
+    <div class="top">
+      <h3>${esc(s.name)}</h3>
+      <span class="lv">
+        <b class="${pts ? "" : "base"}">${lv}</b>
+        <i>level</i>
+      </span>
+    </div>
+    <div class="chosen">${list}</div>
+    <div class="foot">
+      <span class="pts">${pts}</span>
+      <span>${pts === 1 ? "point" : "points"}</span>
+      <span class="open">Open tree →</span>
+    </div>
+  </button>`;
+}
+
+// Refresh a single card in place. Closing the modal can only have changed the
+// skill that was open, so rebuilding all 18 would needlessly detach every card
+// (and any focus sitting on one).
+function refreshCard(id){
+  const s = skillById(id);
+  const host = document.getElementById("groups");
+  if (!s || !host) return false;
+  const old = host.querySelector(`.skillcard[data-skill="${cssEsc(id)}"]`);
+  if (!old) return false;
+
+  const tmp = document.createElement("div");
+  tmp.innerHTML = renderCard(s);
+  old.replaceWith(tmp.firstElementChild);
+
+  // The category tally above it moves with the spend.
+  const group = host.querySelector(`.group.${s.category.toLowerCase()}`);
+  const tally = group && group.querySelector(".tally");
+  if (tally){
+    const spent = P.skills.filter(x => x.category === s.category)
+                          .reduce((n, x) => n + spentIn(x), 0);
+    tally.innerHTML = spent ? `<b>${spent}</b> spent` : "&nbsp;";
+  }
+  return true;
+}
+
+function renderGroups(){
+  const host = document.getElementById("groups");
+  const vis = visibleSkills();
+
+  host.innerHTML = CATEGORIES
+    .map(cat => [cat, vis.filter(s => s.category === cat)])
+    .filter(([, list]) => list.length)
+    .map(([cat, list]) => {
+      const spent = list.reduce((n, s) => n + spentIn(s), 0);
+      return `<section class="group ${cat.toLowerCase()}">
+        <div class="grouphead">
+          <span class="cat"></span>
+          <h2>${esc(cat)}</h2>
+          <span class="tally">${spent ? `<b>${spent}</b> spent` : "&nbsp;"}</span>
+        </div>
+        <div class="cards">${list.map(renderCard).join("")}</div>
+      </section>`;
+    }).join("") || `<div class="empty">No skills to show.</div>`;
+}
+
+/* Draw one skill as the game draws it: perks on their AVIF grid cells, wired
+   by the tree's own connection edges. Cells can hold two perks (a few trees
+   stack them), so co-located perks are nudged apart along x. */
+const CELL_W = 184, CELL_H = 108, PAD_X = 78, PAD_Y = 42, NODE_R = 9;
+// Perk-name label metrics, in SVG user units. LABEL_SIZE must match .plabel's
+// font-size in the stylesheet -- the line spacing, the gap under the node, the
+// crowding test and the wrap width are all derived from it, so changing the
+// label size in one place keeps them in step.
+const LABEL_SIZE = 15;
+// Radius of the Nordic star flare behind an owned node, in SVG units.
+const GLOW_R = NODE_R * 4.5;
+// The flare bitmap lives in a CSS custom property (--tex-star) so the texture
+// data sits with the rest of the theme. SVG <image href> cannot read a var(),
+// so pull the URL out once at load and inline it.
+const STAR_HREF = (() => {
+  try{
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue("--tex-star").trim();
+    const m = raw.match(/url\(["']?([^"')]+)["']?\)/);
+    return m ? m[1] : "";
+  }catch{ return ""; }
+})();
+// Radius of a rank pip, in SVG user units. Doubled from the original 2: at
+// that size the pips were lost against the nebula even after brightening them.
+// The pip row's pitch and its clearance above the node both derive from this.
+const PIP_R = 4;
+const LINE_H     = LABEL_SIZE;              // second line sits one em down
+// Baseline offset below the node. The extra padding (was 4) drops the name
+// clear of the node and its glow instead of crowding the star. Both the
+// canvas height and the label-crowding test derive from this, so raising it
+// reserves the matching space rather than clipping the bottom row.
+const LABEL_GAP  = 11 + LABEL_SIZE * 0.6;
+// Roughly how many characters fit on a line before wrapping. Wider glyphs mean
+// fewer characters, so this shrinks as the label grows.
+const WRAP_CHARS = Math.round(18 * 12 / LABEL_SIZE);
+
+function layout(skill){
+  // Each node has a grid cell (x,y) plus fractional offsets (h,v) that shift it
+  // inside that cell. Those offsets are what give the in-game trees their
+  // scattered look -- Warmaster's v of +2.4 lifts it well clear of its row --
+  // so a plain grid does not reproduce the layout.
+  //
+  // Both axes are mirrored relative to the record: the mastery root is stored
+  // at y=0 but drawn at the bottom growing upward, and x is counted from the
+  // menu's right edge leftward.
+  //
+  // The fractional offsets have to be reflected along with the cell -- a true
+  // mirror is (maxX - x) - h, not (maxX - x) + h. Negating only the cell
+  // leaves each node nudged the wrong way inside it, which is what made the
+  // connecting lines cross.
+  const maxY = Math.max(...skill.perks.map(p => p.position.y));
+  const maxX = Math.max(...skill.perks.map(p => p.position.x));
+
+  const pos = new Map();
+  skill.perks.forEach(p => {
+    const q = p.position;
+    pos.set(p.formId, {
+      x: PAD_X + (maxX - q.x - (q.h || 0)) * CELL_W,
+      y: PAD_Y + (maxY - q.y - (q.v || 0)) * CELL_H,
+    });
+  });
+
+  // Offsets can push a node outside the nominal grid, so measure the real
+  // extents and shift everything back into view.
+  const xs = [...pos.values()].map(v => v.x), ys = [...pos.values()].map(v => v.y);
+  const dx = Math.min(...xs) < PAD_X ? PAD_X - Math.min(...xs) : 0;
+  const dy = Math.min(...ys) < PAD_Y ? PAD_Y - Math.min(...ys) : 0;
+  if (dx || dy) pos.forEach(v => { v.x += dx; v.y += dy; });
+
+  // A few trees place nodes close enough that their labels would collide.
+  // The positions come from the game's own data, so rather than distort the
+  // layout, drop the label on the tighter node of any genuinely overlapping
+  // pair -- hovering still names it.
+  //
+  // This tests the labels' actual BOXES rather than the distance between their
+  // nodes. The old test was `|dx| < 76 && |dy| < LABEL_GAP + LINE_H*2`, a fixed
+  // guess that ignored how wide a label really is and how many lines it wraps
+  // to. It cost exactly two labels in the whole modlist -- Restoration's Divine
+  // Glory and Dawn's Wrath -- and neither actually overlapped: Divine Glory
+  // cleared its neighbour by 3px horizontally, and Dawn's Wrath sat 37px below
+  // its neighbour's single 15px line. Both were simply missing their name.
+  const entries = [...pos.entries()];
+  const crowded = new Set();
+  const box = ([fid, v]) => {
+    const e = PERK.get(fid);
+    const lines = e ? wrapLabel(e.p.name) : [""];
+    // Widest line drives the box. `labelWidth` is an approximation of the
+    // rendered run; it only has to be good enough to separate "overlaps" from
+    // "does not", and it errs wide.
+    const w = Math.max(...lines.map(labelWidth));
+    const top = v.y + NODE_R + LABEL_GAP - LINE_H;      // first line's top
+    return {l: v.x - w / 2, r: v.x + w / 2,
+            t: top, b: top + lines.length * LINE_H};
+  };
+  for (let i = 0; i < entries.length; i++){
+    for (let j = i + 1; j < entries.length; j++){
+      const A = box(entries[i]), B = box(entries[j]);
+      // Overlap on BOTH axes, with a small breathing margin, is a collision.
+      const M = 2;
+      if (A.l < B.r + M && A.r + M > B.l && A.t < B.b + M && A.b + M > B.t){
+        const a = entries[i][1], b = entries[j][1];
+        crowded.add(entries[a.y >= b.y ? i : j][0]);
+      }
+    }
+  }
+
+  const fx = [...pos.values()].map(v => v.x), fy = [...pos.values()].map(v => v.y);
+  return {
+    pos, crowded,
+    w: Math.max(...fx) + PAD_X,
+    // Bottom row needs room for a two-line label under the node.
+    h: Math.max(...fy) + NODE_R + LABEL_GAP + LINE_H * 2,
+  };
+}
+
+// Relative star size. In-game the constellation is not a uniform dot grid --
+// the mastery root is a large body and the leaves are small points -- so scale
+// by how central the perk is: no prerequisites (the root) is biggest, and
+// anything other perks depend on outranks a leaf.
+function nodeScale(p){
+  if (!p.prerequisites.length) return 1.5;      // mastery root
+  return p._hasDependents ? 1.15 : 0.85;
+}
+
+// Mark which perks other perks require. Done once per tree rather than per
+// node, since it is an O(n^2) scan over prerequisite lists.
+function markDependents(skill){
+  const needed = new Set();
+  skill.perks.forEach(p => p.prerequisites.forEach(q => needed.add(q.formId)));
+  skill.perks.forEach(p => { p._hasDependents = needed.has(p.formId); });
+}
+
+// Wrap a perk name onto at most two short lines so labels stay readable.
+/* Width of one rendered label line, in SVG user units.
+
+   Measured with the browser's own text metrics rather than approximated: the
+   font is proportional, and characters range from 5.7 to 9.4 px wide at
+   LABEL_SIZE, so any flat per-character constant either under-estimates (and
+   lets labels overlap) or over-estimates (and hides labels needlessly).
+
+   Canvas is used because it measures without touching the DOM, and the result
+   is memoised -- the collision test is O(n^2) over a tree's perks, so the same
+   handful of strings would otherwise be measured hundreds of times. Falls back
+   to a deliberately generous per-character estimate if canvas is unavailable,
+   which errs toward hiding rather than overlapping. */
+const labelWidth = (() => {
+  const cache = new Map();
+  let ctx = null;
+  try{
+    ctx = document.createElement("canvas").getContext("2d");
+    // Must match .plabel's font-size and the body font stack.
+    ctx.font = `${LABEL_SIZE}px "Segoe UI", system-ui, -apple-system, sans-serif`;
+  }catch{ ctx = null; }
+  return (text) => {
+    if (cache.has(text)) return cache.get(text);
+    const w = ctx ? ctx.measureText(text).width : text.length * 9.4;
+    cache.set(text, w);
+    return w;
+  };
+})();
+
+function wrapLabel(name){
+  const words = name.split(" ");
+  if (words.length === 1) return [name];
+  const lines = [""];
+  words.forEach(w => {
+    const cur = lines[lines.length - 1];
+    if (!cur) lines[lines.length - 1] = w;
+    else if ((cur + " " + w).length <= WRAP_CHARS) lines[lines.length - 1] = cur + " " + w;
+    else lines.push(w);
+  });
+  return lines.slice(0, 2);
+}
+
+// Just the constellation canvas. The modal draws its own header around this,
+// so the tree markup stays free of chrome.
+function renderTreeBody(s, spentAll, availAll){
+  markDependents(s);
+  const L = layout(s);
+  const byId = new Map(s.perks.map(p => [p.formId, p]));
+
+  // Edges first so nodes paint on top.
+  const edges = [];
+  s.perks.forEach(p => {
+    const a = L.pos.get(p.formId);
+    const from = S.ranks.get(p.formId) || 0;
+    p.connections.forEach(cid => {
+      const b = L.pos.get(cid);
+      if (!a || !b) return;
+      const to = S.ranks.get(cid) || 0;
+      const cls = (from && to) ? "on" : (from ? "lit" : "");
+      // Straight runs, like the constellation lines in the skill menu. Stop at
+      // the node edge so the line meets the ring instead of passing under it.
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const gap = NODE_R + 2;
+      const x1 = a.x + dx / len * gap, y1 = a.y + dy / len * gap;
+      const x2 = b.x - dx / len * gap, y2 = b.y - dy / len * gap;
+      // Endpoints are tagged so a repaint can relight the edge without
+      // recomputing geometry.
+      edges.push(`<line class="edge ${cls}" data-from="${p.formId}" data-to="${cid}"`
+               + ` x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`);
+    });
+  });
+
+  const nodes = s.perks.map(p => {
+    const at = L.pos.get(p.formId);
+    const have = S.ranks.get(p.formId) || 0;
+    const met = prereqsMet(p);
+    const affordable = spentAll < availAll;
+    const state = have ? (have >= p.ranks ? "taken maxed" : "taken")
+                       : (met && affordable ? "avail" : (met ? "" : "locked"));
+    const lines = wrapLabel(p.name);
+    const labelCls = have ? "taken" : (met && affordable ? "avail" : "");
+
+    // Rank pips sit above the node; the tree grows upward, so the space below
+    // a node is where its incoming edge arrives. Pitch and clearance derive
+    // from PIP_R so the row cannot self-overlap or collide with the node when
+    // the radius changes.
+    let dots = "";
+    if (p.ranks > 1){
+      const pitch = PIP_R * 3;                  // gap of one radius between pips
+      const span = (p.ranks - 1) * pitch;
+      // Clear the node's ACTUAL radius, not the base: nodeScale() makes a
+      // mastery root 1.5x, and using NODE_R put the pips inside it. The extra
+      // PIP_R of padding keeps a visible gap rather than letting the pips sit
+      // flush against the star.
+      const cy = at.y - NODE_R * nodeScale(p) - PIP_R * 2;
+      dots = `<g class="rankdots">` + Array.from({length: p.ranks}, (_, i) =>
+        `<circle cx="${at.x - span/2 + i*pitch}" cy="${cy}" r="${PIP_R}"
+                 class="${i < have ? "on" : ""}"/>`).join("") + `</g>`;
+    }
+
+    // The Nordic star flare sits behind the node. It is always emitted but is
+    // opacity:0 unless the Nordic theme is active and the perk is owned, so
+    // toggling the theme never needs to rebuild the tree.
+    const flare = STAR_HREF
+      ? `<image class="starglow" href="${STAR_HREF}" x="${at.x - GLOW_R}"
+                y="${at.y - GLOW_R}" width="${GLOW_R * 2}" height="${GLOW_R * 2}"
+                preserveAspectRatio="xMidYMid meet"/>`
+      : "";
+
+    // Star size follows the perk's place in the tree: the mastery root (no
+    // prerequisites, the bottom of the constellation) is the brightest body,
+    // leaves are small. This is what stops a Nordic tree reading as a uniform
+    // dot grid.
+    const r = NODE_R * nodeScale(p);
+
+    return `<g class="pnode ${state}" data-fid="${p.formId}" tabindex="0"
+               role="button" aria-pressed="${have>0}"
+               aria-label="${esc(p.name)}, rank ${have} of ${p.ranks}">
+        ${flare}
+        <circle class="glow" cx="${at.x}" cy="${at.y}" r="${r + 7}"/>
+        <circle class="halo" cx="${at.x}" cy="${at.y}" r="${r + 4}"/>
+        <circle class="ring" cx="${at.x}" cy="${at.y}" r="${r}"/>
+        <circle class="core" cx="${at.x}" cy="${at.y}" r="${Math.max(1, r - 4)}"/>
+      </g>${dots}
+      ${L.crowded.has(p.formId) ? "" :
+        `<text class="plabel ${labelCls}" x="${at.x}" y="${at.y + NODE_R + LABEL_GAP}">${
+          lines.map((ln, i) => `<tspan x="${at.x}" dy="${i ? LINE_H : 0}">${esc(ln)}</tspan>`).join("")
+        }</text>`}`;
+  }).join("");
+
+  // xMidYMid so the tree centres in the modal's full-height canvas; "meet"
+  // scales it to fit entirely, never cropping.
+  return `<div class="canvas tipwrap" id="canvas">
+      <svg viewBox="0 0 ${L.w} ${L.h}" preserveAspectRatio="xMidYMid meet">
+        <g>${edges.join("")}</g>
+        ${nodes}
+      </svg>
+    </div>`;
+}
+
+/* ============================================================== modal ===
+   The tree moved behind a card, so the modal has to carry the context the
+   always-on layout used to give for free: the perk budget (the constraint
+   being spent) and a way to reach sibling skills without closing.
+======================================================================== */
+
+// null when closed; a skill editorId when open.
+function modalSkill(){ return S.open ? skillById(S.open) : null; }
+
+function hideTip(){
+  const t = document.getElementById("tip");
+  if (t) t.classList.remove("show");
+}
+
+function renderModal(){
+  const modal = document.getElementById("modal");
+  const sheet = document.getElementById("sheet");
+  const s = modalSkill();
+
+  if (!s){
+    modal.classList.remove("show");
+    sheet.innerHTML = "";
+    syncScrollLock();
+    return;
+  }
+
+  const avail = pointsAvailable(), spent = pointsSpent();
+  const left = avail - spent;
+  const lv = skillLevel(s);
+  const invested = spentIn(s);
+
+  sheet.innerHTML = `
+    <header class="${s.category.toLowerCase()}">
+      <span class="cat"></span>
+      <h3 id="modalTitle">${esc(s.name)}</h3>
+      <span class="lv">
+        <b class="${invested ? "" : "base"}">${lv}</b>
+        <i>${invested ? invested + " pts" : "base"}</i>
+      </span>
+      <span class="bank">
+        <b class="num${left < 0 ? " over" : ""}">${left}</b>
+        <i>points left</i>
+      </span>
+      <button class="close" data-close aria-label="Close perk tree">&times;</button>
+    </header>
+    <div class="note" id="modalNote">&nbsp;</div>
+    ${renderTreeBody(s, spent, avail)}
+    <div class="nav">
+      <button class="chip danger" id="clearTree" data-clear
+              ${invested ? "" : "disabled"}>Clear tree${invested ? ` (${invested})` : ""}</button>
+      <span class="hintkeys">Click to buy · right-click to refund · Esc to close</span>
+    </div>`;
+
+  modal.classList.add("show");
+  syncScrollLock();
+}
+
+// Repaint the open tree's states without re-running layout or replacing the
+// SVG -- the geometry is unchanged, only ownership is.
+function repaintTree(){
+  const s = modalSkill();
+  const sheet = document.getElementById("sheet");
+  if (!s || !sheet) return;
+
+  const avail = pointsAvailable(), spent = pointsSpent();
+  const affordable = spent < avail;
+
+  sheet.querySelectorAll(".pnode").forEach(g => {
+    const entry = PERK.get(g.dataset.fid);
+    if (!entry) return;
+    const p = entry.p;
+    const have = S.ranks.get(p.formId) || 0;
+    const met = prereqsMet(p);
+    g.classList.toggle("taken", have > 0);
+    g.classList.toggle("maxed", have > 0 && have >= p.ranks);
+    g.classList.toggle("avail", !have && met && affordable);
+    g.classList.toggle("locked", !have && !met);
+    g.setAttribute("aria-pressed", have > 0);
+    g.setAttribute("aria-label", `${p.name}, rank ${have} of ${p.ranks}`);
+
+    // Label colour tracks the node's state.
+    const label = g.nextElementSibling && g.nextElementSibling.classList.contains("rankdots")
+      ? g.nextElementSibling.nextElementSibling
+      : g.nextElementSibling;
+    if (label && label.classList.contains("plabel")){
+      label.classList.toggle("taken", have > 0);
+      label.classList.toggle("avail", !have && met && affordable);
+    }
+    // Rank pips.
+    const dots = g.nextElementSibling;
+    if (dots && dots.classList.contains("rankdots")){
+      [...dots.children].forEach((c, i) => c.classList.toggle("on", i < have));
+    }
+  });
+
+  sheet.querySelectorAll(".edge").forEach(line => {
+    const from = S.ranks.get(line.dataset.from) || 0;
+    const to = S.ranks.get(line.dataset.to) || 0;
+    line.classList.toggle("on", !!(from && to));
+    line.classList.toggle("lit", !!(from && !to));
+  });
+
+  // Header counters.
+  const invested = spentIn(s);
+  const lvB = sheet.querySelector(".sheet > header .lv b, header .lv b");
+  if (lvB){
+    lvB.textContent = skillLevel(s);
+    lvB.classList.toggle("base", !invested);
+    const lvI = lvB.parentElement.querySelector("i");
+    if (lvI) lvI.textContent = invested ? invested + " pts" : "base";
+  }
+  const bank = sheet.querySelector(".bank b");
+  if (bank){
+    const left = avail - spent;
+    bank.textContent = left;
+    bank.classList.toggle("over", left < 0);
+  }
+  // Clear button tracks what there is to clear.
+  const clear = sheet.querySelector("[data-clear]");
+  if (clear){
+    clear.disabled = !invested;
+    clear.textContent = invested ? `Clear tree (${invested})` : "Clear tree";
+  }
+}
+
+function openSkill(id){
+  if (!skillById(id)) return;
+  S.open = id;
+  S.skill = id;                    // remembered as the last-viewed tree
+  renderModal();
+  saveHash();
+  const sheet = document.getElementById("sheet");
+  const first = sheet.querySelector(".close");
+  if (first) first.focus();
+}
+
+function closeModal(){
+  if (!S.open) return;
+  const id = S.open;
+  S.open = "";
+  hideTip();
+  renderModal();
+  // Only the skill just closed can have changed; fall back to a full rebuild
+  // if its card is somehow missing.
+  if (!refreshCard(id)) renderGroups();
+  saveHash();
+  // Return focus to the card that opened it.
+  const card = document.querySelector(`.skillcard[data-skill="${cssEsc(id)}"]`);
+  if (card) card.focus();
+}
+
+
+function render(){
+  const effects = activeEffects();
+  renderFields();
+  renderBudget();
+  renderAttrs();
+  renderDerived(effects);
+  renderEffects(effects);
+  renderInvested();
+  renderGroups();
+  renderModal();
+  saveHash();
+}
+
+/* ======================================================== helpers =======
+   Escaping, field lookup and the hints under the character fields. */
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+// The six field rows replace the old selects. An unchosen field differs only
+// by ink colour and an italic placeholder -- no badges, no counters.
+function renderFields(){
+  for (const f of CHOICE_FIELDS){
+    const el = document.getElementById("f" + f[0].toUpperCase() + f.slice(1));
+    if (!el) continue;
+    const v = fieldDisplay(f);
+    el.textContent = v || "not chosen";
+    el.classList.toggle("unset", !v);
+  }
+  // Survival is only offered when the modlist actually ships it.
+  const srow = document.getElementById("survivalRow");
+  if (srow){
+    srow.hidden = !SURVIVAL;
+    if (SURVIVAL){
+      const box = document.getElementById("survival");
+      if (box) box.checked = !!S.survival;
+      srow.classList.toggle("on", !!S.survival);
+      document.getElementById("survivalLabel").textContent =
+        S.survival ? "On" : "Off";
+      document.getElementById("survivalHint").textContent = S.survival
+        ? `-${SURVIVAL.carryWeightPenalty} carry weight`
+        : `costs ${SURVIVAL.carryWeightPenalty} carry weight`;
+    }
+  }
+
+  // The masthead is fixed; the name goes in the browser title bar, so a tab
+  // or a bookmark identifies the character without the page losing its name.
+  document.title = S.name
+    ? `Dragonborn Forge - ${S.name}`
+    : "Dragonborn Forge";
+}
+
+/* ========================================================== chooser ======
+   One component, five data-driven configs (plus "name", which is a text field
+   rather than a list). Each config says how to get the options, how to read an
+   option's id and label, and how to render its detail pane. All six fields --
+   including the name, which is a text box rather than a list -- go through it.
+========================================================================= */
+const FIELDS = {
+  name: {
+    label: "Name", title: "Name your character",
+    optional: true, text: true,
+  },
+  race: {
+    label: "Race", title: "Choose a race",
+    list: () => C.races, id: r => r.editorId, name: r => r.name,
+    detail: r => detailRace(r),
+  },
+  cls: {
+    label: "Class", title: "Choose a class",
+    list: () => C.classes, id: c => c.class, name: c => c.class,
+    detail: c => detailClass(c),
+  },
+  trait: {
+    label: "Trait", title: "Choose a trait",
+    optional: true,
+    list: () => C.traits || [], id: t => t.trait, name: t => t.name,
+    detail: t => detailTrait(t),
+  },
+  stone: {
+    label: "Standing Stone", title: "Choose a standing stone",
+    optional: true,
+    list: () => C.standingStones, id: s => s.editorId, name: s => s.name,
+    detail: s => detailStone(s),
+  },
+  deity: {
+    label: "Devotion", title: "Choose a devotion",
+    optional: true,
+    list: () => R.deities, id: d => d.deity, name: d => d.name,
+    tag: d => d.type,
+    detail: d => detailDeity(d),
+  },
+};
+
+// Current committed value of a field.
+const fieldValue = f => f === "name" ? S.name : S[f];
+// The chosen record for a field, or null.
+function fieldRecord(f, id){
+  const cfg = FIELDS[f];
+  if (!cfg || !cfg.list) return null;
+  return cfg.list().find(x => cfg.id(x) === id) || null;
+}
+// Display text for a field's current value.
+function fieldDisplay(f){
+  const v = fieldValue(f);
+  if (!v) return "";
+  if (f === "name") return v;
+  const rec = fieldRecord(f, v);
+  return rec ? FIELDS[f].name(rec) : v;
+}
+
+/* ---------------------------------------------------------- detail panes */
+const fmtSigned = n => (n > 0 ? "+" : "") + n;
+
+function detailRace(r){
+  if (!r) return `<p class="empty">No race chosen.</p>`;
+  let h = `<h4>${esc(r.name)}</h4>`;
+  if (r.description) h += `<p class="desc">${esc(strip(r.description))}</p>`;
+  if ((r.powers || []).length){
+    h += `<div class="sect">Powers</div>`;
+    h += r.powers.map(p => `<div class="sub"><b>${esc(p.name)}</b>`
+      + `<span>${esc(strip(p.description || ""))}</span></div>`).join("");
+  }
+  // Carry weight is deliberately NOT shown here: it is identical across all
+  // ten races, so repeating it in every pane said nothing about the choice.
+  // The Attributes card reports the real total, survival penalty included.
+  // The bonus perk point stays -- it genuinely differs (Imperial alone).
+  if (r.bonusPerkPoints){
+    h += `<div class="sect">Racial</div><div class="rows">`
+       + row("Bonus perk points", fmtSigned(r.bonusPerkPoints), "up")
+       + `</div>`;
+  }
+  // Aetherius gives races distinct stats, but ApprenticeAetherius.esp loads
+  // later and normalizes them all. Say so, or a reader comparing races finds
+  // nothing to compare and assumes the data is broken.
+  if (r.normalizedBy){
+    h += `<div class="foot">Every race in this modlist shares the same base
+      attributes. <em>${esc(r.normalizedBy)}</em> normalizes them. Racial
+      differences come from powers, not from starting stats.</div>`;
+  }
+  return h;
+}
+
+function detailClass(c){
+  if (!c) return `<p class="empty">No class chosen.</p>`;
+  // A class has no description field -- its skill floors ARE its description,
+  // and because mastery perks gate at 10, they decide which trees open at
+  // level 1. So they lead the pane instead of sitting under empty prose.
+  let h = `<h4>${esc(c.class)}</h4>`;
+  if ((c.skills || []).length){
+    h += `<p class="desc">Sets these skills at creation. Mastery perks unlock at
+          10, so a class decides which trees you can open straight away.</p>`;
+    h += `<div class="rows">` + c.skills.map(s =>
+      row(`${esc(s.skill)}${s.rank === "major" ? " <em>major</em>" : ""}`, s.level)
+    ).join("") + `</div>`;
+  }
+  if ((c.effects || []).length){
+    h += `<div class="sect">Effects</div>`;
+    h += c.effects.map(e => `<div class="sub"><b>${esc(e.name)}</b>`
+      + `<span>${esc(strip(e.description || ""))}</span></div>`).join("");
+  }
+  return h;
+}
+
+function detailTrait(t){
+  if (!t) return `<p class="empty">No trait chosen.</p>`;
+  let h = `<h4>${esc(t.name)}</h4>`;
+  if (t.description) h += `<p class="desc">${esc(strip(t.description))}</p>`;
+  if (t.grantsPower){
+    h += `<div class="sect">Grants a power</div>`
+      + `<div class="sub"><b>${esc(t.grantsPower)}</b></div>`;
+  }
+  if (t.bonusPerkPoints){
+    h += `<div class="sect">Bonus</div><div class="rows">`
+      + row("Bonus perk points", fmtSigned(t.bonusPerkPoints), "up") + `</div>`;
+  }
+  return h;
+}
+
+function detailStone(s){
+  if (!s) return `<p class="empty">No standing stone chosen.</p>`;
+  let h = `<h4>${esc(s.name)}</h4>`;
+  if (s.description) h += `<p class="desc">${esc(strip(s.description))}</p>`;
+  // A stone can change which devotion variant is in effect.
+  const dt = R.deities.find(x => x.deity === S.deity);
+  if (isStoneVaried(dt)){
+    const dv = deityDevotion(dt, s.editorId);
+    h += `<div class="sect">With your devotion</div>`
+      + `<div class="sub"><b>${esc(dt.name)}</b><span>${esc(strip(dv
+          ? dv.description : ""))}</span></div>`;
+  }
+  return h;
+}
+
+function detailDeity(d){
+  if (!d) return `<p class="empty">No devotion chosen.</p>`;
+  const dv = deityDevotion(d, S.stone);
+  const unresolved = deityVariantUnresolved(d, S.stone);
+  let h = `<h4>${esc(d.name)}</h4>`;
+  h += `<div class="rows"><div class="row"><span class="rk">Type</span>`
+     + `<span class="rv">${esc(d.type)}${d.type === "Daedra"
+        ? " (double-edged)" : ""}</span></div></div>`;
+  if (dv){
+    h += `<div class="sect">Devotion (permanent)</div>`
+      + `<div class="sub"><b>${esc(dv.name)}</b>`
+      + `<span>${esc(strip(dv.description || ""))}</span></div>`;
+    if (isStoneVaried(d)){
+      const stone = C.standingStones.find(x => x.editorId === S.stone);
+      h += unresolved
+        ? `<div class="foot">This devotion changes with your standing stone
+           (${d.variants.length} variants). No stone is chosen yet, so the base
+           effect is shown.</div>`
+        : `<div class="foot">Shown as <em>${esc(stoneWord(stone))}</em>: this
+           devotion changes with your standing stone.</div>`;
+    }
+  }
+  if (d.blessing){
+    h += `<div class="sect">Shrine blessing (temporary, 8h)</div>`
+      + `<div class="sub"><b>${esc(d.blessing.name)}</b>`
+      + `<span>${esc(strip(d.blessing.description || ""))}</span></div>`
+      + `<div class="foot">Blessings are temporary, so they are listed but kept
+         out of the derived totals.</div>`;
+  }
+  return h;
+}
+
+const row = (k, v, cls) =>
+  `<div class="row"><span class="rk">${k}</span>`
+  + `<span class="rv${cls ? " " + cls : ""}">${esc(v)}</span></div>`;
+
+/* renderPreview() removed: the chooser shows description / powers /
+   effects only. A live now->next stat diff sat under every option, but
+   races in this modlist are normalized flat, so it read 100 -> 100 on
+   almost every row and added height without adding information. */
+
+// The hints under each select used to repeat the full effect text, which the
+// Active Effects panel already lists verbatim -- two of them alone were 196px
+// of duplicated prose. Each hint now carries only what that panel does NOT
+// say: the class's skill floors, and the fact that a devotion has stone
+// variants. Everything descriptive lives in Active Effects.
+function renderHints(){
+  const c = C.classes.find(x => x.class === S.cls);
+  // Class skills SET the skill to that value at creation -- they are a floor,
+  // not a bonus on top of the base 5. This is the one thing no other panel
+  // says, so it is the only hint kept under the selects; everything else the
+  // hints used to repeat is listed verbatim in Active Effects.
+  document.getElementById("clsHint").innerHTML = c && c.skills && c.skills.length
+    ? c.skills.map(s => `<em>${esc(s.skill)} ${s.level}</em>`).join(", ")
+    : "";
+
+  // The devotion hint now says which variant is actually in effect, rather
+  // than only counting them.
+  const dt = R.deities.find(x => x.deity === S.deity);
+  const hint = document.getElementById("deityHint");
+  if (!isStoneVaried(dt)){
+    hint.textContent = "";
+  } else if (deityVariantUnresolved(dt, S.stone)){
+    hint.textContent = `varies by standing stone (${dt.variants.length}), none chosen`;
+  } else {
+    const stone = C.standingStones.find(x => x.editorId === S.stone);
+    hint.textContent = `as ${stoneWord(stone)}, varies by standing stone`;
+  }
+}
+// Descriptions carry <50>-style runtime placeholders; show the number plainly.
+const strip = s => String(s || "").replace(/<(\d+)>/g, "$1");
+
+/* -------------------------------------------------- chooser: rendering -- */
+// A filter box only earns its space on the long lists (32 traits, 45 deities).
+const NEEDS_FILTER = 15;
+
+function chooserOptions(field){
+  const cfg = FIELDS[field];
+  if (!cfg.list) return [];
+  let items = cfg.list().slice();
+  const q = CH.filter.trim().toLowerCase();
+  if (q) items = items.filter(x => cfg.name(x).toLowerCase().includes(q));
+  return items;
+}
+
+// Would committing this pick leave the build spending more than it has?
+// Class and stone changes are safe: skill levels DERIVE from the perks bought
+// (classSkillFloor is a floor, never a cap) and canBuy never gates on skill
+// level, so no purchase can be orphaned. Only the two +1 bonuses -- Imperial
+// and Faithless -- can shrink the budget below what is already committed.
+//
+// Nothing is refunded when this happens. The dialog says the build will be
+// over budget and lets the user proceed anyway; the perks stay bought.
+function pickCost(field, pickId){
+  if (field !== "race" && field !== "trait") return null;
+  const after = pointsAvailable(withField(field, pickId));
+  const spent = pointsSpent();
+  if (spent <= after) return null;
+  return {over: spent - after, before: pointsAvailable(S), after, spent};
+}
+
+/* What a reset would actually destroy, so the dialog can say it rather than
+   asking "are you sure?" about nothing in particular. */
+function resetImpact(){
+  const chosen = CHOICE_FIELDS.filter(f => fieldValue(f));
+  const spent = pointsSpent();
+  const trees = P.skills.filter(s => s.perks.some(p => S.ranks.get(p.formId))).length;
+  return {
+    chosen, spent, trees, picks: S.picks.length, level: S.level,
+    // Nothing to lose: no choices, no perks, no level-ups, still level 1.
+    empty: !chosen.length && !spent && !S.picks.length && S.level === 1,
+  };
+}
+
+function renderChooser(){
+  const modal = document.getElementById("cmodal");
+  const sheet = document.getElementById("csheet");
+
+  // The reset confirmation borrows this modal. It is checked first so it can
+  // sit on top of nothing else -- reset is only reachable from the masthead.
+  if (ASK.open){
+    const im = resetImpact();
+    const bits = [];
+    if (im.chosen.length) bits.push(`${im.chosen.length} character choice${
+      im.chosen.length === 1 ? "" : "s"}`);
+    if (im.spent) bits.push(`${im.spent} perk point${im.spent === 1 ? "" : "s"}`
+      + ` across ${im.trees} tree${im.trees === 1 ? "" : "s"}`);
+    if (im.picks) bits.push(`${im.picks} level-up choice${im.picks === 1 ? "" : "s"}`);
+    if (im.level > 1) bits.push(`level ${im.level}`);
+
+    sheet.innerHTML = `
+      <header>
+        <h3 id="cTitle">Reset this build?</h3>
+        <button class="close" data-askno aria-label="Cancel">&times;</button>
+      </header>
+      <div class="cask">
+        <p>This clears everything back to an empty character. It cannot be undone.</p>
+        ${bits.length
+          ? `<p class="lose"><b>You will lose:</b> ${esc(bits.join(" · "))}.</p>`
+          : `<p class="lose empty">There is nothing to lose. This build is already empty.</p>`}
+        <p class="keep">Your build link stays in the address bar until the page
+           is reloaded, so a copied link still works.</p>
+      </div>
+      <div class="nav">
+        <button class="chip" data-askno>Cancel</button>
+        <span class="right">
+          <button class="chip danger" data-askyes>Reset build</button>
+        </span>
+      </div>`;
+    sheet.classList.add("ask");
+    modal.classList.add("show");
+    syncScrollLock();
+    return;
+  }
+
+  sheet.classList.remove("ask");
+
+  if (!CH.field){
+    modal.classList.remove("show");
+    sheet.innerHTML = "";
+    syncScrollLock();
+    return;
+  }
+
+  const field = CH.field, cfg = FIELDS[field];
+
+  const head = `<header>
+    <h3 id="cTitle">${esc(cfg.title)}</h3>
+    <button class="close" data-cclose aria-label="Close">&times;</button>
+  </header>`;
+
+  /* body */
+  let body;
+  if (cfg.text){
+    body = `<div class="cname">
+      <input id="cNameInput" type="text" maxlength="40" autocomplete="off"
+             spellcheck="false" placeholder="Unnamed"
+             value="${esc(CH.pick)}" aria-label="Character name">
+      <div class="sub">You can leave this blank and name your character later.</div>
+    </div>`;
+  } else {
+    const items = chooserOptions(field);
+    const cur = fieldValue(field);
+    const showFilter = cfg.list().length >= NEEDS_FILTER;
+    let listHtml = showFilter
+      ? `<div class="cfilter"><input id="cFilter" type="text" autocomplete="off"
+           placeholder="Filter ${esc(cfg.label.toLowerCase())}…"
+           value="${esc(CH.filter)}" aria-label="Filter options"></div>`
+      : "";
+    if (cfg.optional){
+      listHtml += `<button class="copt${CH.pick === "" ? " on" : ""}" data-opt="">`
+        + `<span>none</span>`
+        + (cur === "" ? `<span class="cur">✦</span>` : "") + `</button>`;
+    }
+    listHtml += items.map(x => {
+      const id = cfg.id(x);
+      return `<button class="copt${id === CH.pick ? " on" : ""}"
+        data-opt="${esc(id)}"><span>${esc(cfg.name(x))}</span>`
+        + (id === cur ? `<span class="cur">✦</span>`
+           : cfg.tag ? `<span class="tag">${esc(cfg.tag(x))}</span>` : "")
+        + `</button>`;
+    }).join("");
+    if (!items.length) listHtml += `<div class="cfilter"><span class="sub">No match.</span></div>`;
+
+    const rec = CH.pick ? fieldRecord(field, CH.pick) : null;
+    const detail = CH.pick === "" && cfg.optional
+      ? `<h4>None</h4><p class="desc">No ${esc(cfg.label.toLowerCase())} chosen.</p>`
+      : cfg.detail(rec);
+
+    body = `<div class="cbody">
+      <div class="clist" id="cList">${listHtml}</div>
+      <div class="cdetail" id="cDetail">${detail}</div>
+    </div>`;
+  }
+
+  /* Warning when this pick would leave the build over budget. Nothing is
+     refunded; the build simply becomes invalid until the user fixes it. */
+  const cost = cfg.text ? null : pickCost(field, CH.pick);
+  const warn = cost
+    ? `<div class="cwarn">Perk budget <b>${cost.before} → ${cost.after}</b>,
+        but ${cost.spent} ${cost.spent === 1 ? "is" : "are"} already spent.
+        This build will be <b>${cost.over} over budget</b> until you refund
+        ${cost.over === 1 ? "a perk" : "some perks"} or pick the bonus back
+        up. Nothing is removed for you.</div>`
+    : "";
+
+  /* footer */
+  const canGo = cfg.optional || cfg.text || CH.pick !== "";
+  const nav = `<div class="nav">
+      <button class="chip" data-cclose>Cancel</button>
+      <span class="right">
+        <button class="chip go" data-commit ${canGo ? "" : "disabled"}>${
+          cost && !CH.confirm ? "Choose anyway" : "Choose"}</button>
+      </span></div>`;
+
+  sheet.innerHTML = head + body + warn + nav;
+  modal.classList.add("show");
+  syncScrollLock();
+}
+
+/* ------------------------------------------------------ chooser: verbs -- */
+function openChooser(field){
+  CH.field = field;
+  CH.filter = "";
+  CH.confirm = false;
+  CH.pick = fieldValue(field);
+  CH.lastFocus = document.activeElement;
+  renderChooser();
+  focusChooser();
+}
+
+// Focus goes to the name box when there is one, otherwise the selected option
+// so the arrow keys work immediately.
+function focusChooser(){
+  const inp = document.getElementById("cNameInput");
+  if (inp){ inp.focus(); inp.select(); return; }
+  const on = document.querySelector("#cList .copt.on") ||
+             document.querySelector("#cList .copt");
+  if (on){ on.focus(); scrollPickIntoView(); }
+}
+function scrollPickIntoView(){
+  const on = document.querySelector("#cList .copt.on");
+  if (on && on.scrollIntoView) on.scrollIntoView({block: "nearest"});
+}
+
+function closeChooser(){
+  const back = CH.lastFocus;
+  CH.field = ""; CH.confirm = false; CH.pick = ""; CH.filter = "";
+  renderChooser();
+  if (back && back.focus) back.focus();
+  CH.lastFocus = null;
+}
+
+/* ------------------------------------------------- reset confirmation --- */
+function askReset(){
+  ASK.open = true;
+  ASK.lastFocus = document.activeElement;
+  renderChooser();
+  // Focus Cancel, not the destructive button, so a stray Enter does nothing.
+  const no = document.querySelector("#csheet .nav [data-askno]");
+  if (no) no.focus();
+}
+function closeAsk(){
+  const back = ASK.lastFocus;
+  ASK.open = false;
+  renderChooser();
+  if (back && back.focus) back.focus();
+  ASK.lastFocus = null;
+}
+function doReset(){
+  S.ranks.clear(); S.picks = []; S.level = 1;
+  clearChoices();
+  S.skill = ""; S.open = "";
+  setLevelControl(1);
+  closeAsk();
+  renderHints();
+  render();
+  // No flash: flash() styles as a warning, and six fields snapping back to
+  // "not chosen" is its own confirmation that something happened.
+}
+
+// Write the highlighted pick into the build.
+function commitPick(){
+  const field = CH.field;
+  if (!field) return;
+  if (field === "name"){
+    S.name = String(CH.pick || "").trim();
+  } else {
+    // Race and trait carry the two +1 bonuses, so either can leave the build
+    // over budget. Nothing is refunded here: renderBudget() shows the
+    // overspend and the user resolves it.
+    S[field] = CH.pick;
+  }
+}
+
+/* ============================================================= export ====
+   Two renderings of one build summary: a plain-text block for pasting into
+   Discord or a wiki, and a printable sheet for paper/PDF. Both are built from
+   the same gathered model, so they cannot drift apart.
+========================================================================= */
+
+// Everything worth exporting, gathered once.
+function buildSummary(){
+  const effects = activeEffects();
+  const a = attrTotal();
+  const avail = pointsAvailable(), spent = pointsSpent();
+
+  const trees = P.skills.map(s => {
+    const picked = s.perks
+      .filter(p => S.ranks.get(p.formId))
+      .map(p => ({
+        name: p.name,
+        rank: S.ranks.get(p.formId),
+        ranks: p.ranks,
+        pts: S.ranks.get(p.formId),
+      }));
+    return picked.length ? {
+      name: s.name, category: s.category, level: skillLevel(s),
+      perks: picked, points: picked.reduce((n, p) => n + p.pts, 0),
+    } : null;
+  }).filter(Boolean);
+
+  const dt = R.deities.find(x => x.deity === S.deity);
+  const raceRec = C.races.find(x => x.editorId === S.race);
+  const carryPen = survivalCarryPenalty(S);
+  const carryBase = (raceRec && raceRec.carryWeight) || 0;
+  const fx = fxTotals(effects);
+  return {
+    name: S.name || "Unnamed",
+    survival: !!S.survival,
+    survivalPenalty: carryPen,
+    carry: carryBase ? carryBase + (fx.carry || 0) - carryPen : null,
+    level: S.level,
+    race: fieldDisplay("race") || "not chosen",
+    cls: fieldDisplay("cls") || "not chosen",
+    trait: fieldDisplay("trait") || "not chosen",
+    stone: fieldDisplay("stone") || "not chosen",
+    deity: fieldDisplay("deity") || "not chosen",
+    deityVariant: isStoneVaried(dt) && !deityVariantUnresolved(dt, S.stone)
+      ? stoneWord(C.standingStones.find(x => x.editorId === S.stone)) : "",
+    attrs: a,
+    picks: {h: attrCount("h"), m: attrCount("m"), s: attrCount("s")},
+    pickOrder: S.picks.slice(),
+    // The first level-up choice is worth double (level 2 grants 20, every
+    // later level 10), so which attribute took it is a real build fact.
+    firstPick: S.picks[0]
+      ? {stat: {h: "Health", m: "Magicka", s: "Stamina"}[S.picks[0]],
+         gain: (perLevel[1] || {}).healthPerChoice || 20,
+         other: (perLevel[2] || {}).healthPerChoice || 10}
+      : null,
+    avail, spent, left: avail - spent,
+    trees,
+    // Perks are excluded here for the same reason they are excluded from the
+    // Active Effects card: the sheet already lists every bought perk by tree,
+    // so repeating them as prose would duplicate the largest section.
+    // They still reach the totals via fxTotals(effects) above.
+    effects: effects.filter(e => !e.hidden),
+    modlist: P.modlist,
+    url: location.href,
+  };
+}
+
+// ---- plain text
+function buildAsText(){
+  const b = buildSummary();
+  const L = [];
+  const rule = "=".repeat(60);
+  const thin = "-".repeat(60);
+  L.push(rule);
+  L.push(`  ${b.name.toUpperCase()}`);
+  L.push(`  Level ${b.level} ${b.race} ${b.cls}`.replace(/\s+/g, " "));
+  L.push(rule);
+  L.push("");
+  L.push("CHARACTER");
+  L.push(thin);
+  const pad = k => (k + " ".repeat(16)).slice(0, 16);
+  L.push(`${pad("Name")}${b.name}`);
+  L.push(`${pad("Level")}${b.level}`);
+  L.push(`${pad("Race")}${b.race}`);
+  L.push(`${pad("Class")}${b.cls}`);
+  L.push(`${pad("Trait")}${b.trait}`);
+  L.push(`${pad("Standing Stone")}${b.stone}`);
+  L.push(`${pad("Devotion")}${b.deity}${b.deityVariant ? ` (as ${b.deityVariant})` : ""}`);
+  if (b.survival) L.push(`${pad("Survival")}On (-${b.survivalPenalty} carry weight)`);
+  L.push("");
+  L.push("ATTRIBUTES");
+  L.push(thin);
+  L.push(`${pad("Health")}${b.attrs.h}`);
+  L.push(`${pad("Magicka")}${b.attrs.m}`);
+  L.push(`${pad("Stamina")}${b.attrs.s}`);
+  if (b.carry != null){
+    L.push(`${pad("Carry weight")}${b.carry}`
+         + (b.survivalPenalty ? ` (survival -${b.survivalPenalty})` : ""));
+  }
+  L.push(`${pad("Level-ups")}${b.picks.h}H / ${b.picks.m}M / ${b.picks.s}S`
+       + ` (${b.pickOrder.length} of ${attrAvail()})`);
+  if (b.firstPick){
+    L.push(`${pad("First choice")}${b.firstPick.stat}`
+         + ` (+${b.firstPick.gain} instead of +${b.firstPick.other})`);
+  }
+  L.push("");
+  L.push("PERKS");
+  L.push(thin);
+  L.push(`${pad("Points")}${b.spent} spent, ${b.left} remaining (of ${b.avail})`);
+  if (!b.trees.length){
+    L.push("");
+    L.push("  No perks selected.");
+  }
+  for (const cat of ["Combat", "Magic", "Stealth"]){
+    const inCat = b.trees.filter(t => t.category === cat);
+    if (!inCat.length) continue;
+    L.push("");
+    L.push(`${cat.toUpperCase()}`);
+    for (const t of inCat){
+      L.push(`  ${t.name}: level ${t.level}, ${t.points} pt${t.points === 1 ? "" : "s"}`);
+      for (const p of t.perks){
+        L.push(`      ${p.name}${p.ranks > 1 ? ` (${p.rank}/${p.ranks})` : ""}`);
+      }
+    }
+  }
+  if (b.effects.length){
+    L.push("");
+    L.push("ACTIVE EFFECTS");
+    L.push(thin);
+    let src = "";
+    for (const e of b.effects){
+      if (e.source !== src){ src = e.source; L.push(`  [${src}]`); }
+      // Wrap the description so the block stays inside 60 columns.
+      const head = `    ${e.label}: `;
+      const words = e.text.split(/\s+/);
+      let line = head;
+      const out = [];
+      for (const w of words){
+        if ((line + w).length > 74){ out.push(line); line = "      " + w + " "; }
+        else line += w + " ";
+      }
+      out.push(line);
+      out.forEach(x => L.push(x.replace(/\s+$/, "")));
+    }
+  }
+  L.push("");
+  L.push(thin);
+  L.push(`${b.modlist} · generated by Dragonborn Forge`);
+  L.push(b.url);
+  return L.join("\n");
+}
+
+// ---- printable sheet
+function buildAsPrintHTML(){
+  const b = buildSummary();
+  const e = esc;
+  const row = (k, v) => v && v !== "not chosen"
+    ? `<tr><th>${e(k)}</th><td>${e(v)}</td></tr>` : "";
+
+  const cats = ["Combat", "Magic", "Stealth"].map(cat => {
+    const inCat = b.trees.filter(t => t.category === cat);
+    if (!inCat.length) return "";
+    return `<section class="cat"><h3>${e(cat)}</h3>` + inCat.map(t =>
+      `<div class="tree">
+         <div class="th"><b>${e(t.name)}</b>
+           <span>level ${t.level} · ${t.points} pt${t.points === 1 ? "" : "s"}</span></div>
+         <ul>${t.perks.map(p =>
+           `<li>${e(p.name)}${p.ranks > 1
+             ? ` <i>${p.rank}/${p.ranks}</i>` : ""}</li>`).join("")}</ul>
+       </div>`).join("") + `</section>`;
+  }).join("");
+
+  let fx = "", src = "";
+  for (const x of b.effects){
+    if (x.source !== src){
+      if (src) fx += `</dl>`;
+      src = x.source;
+      fx += `<h4>${e(src)}</h4><dl>`;
+    }
+    fx += `<dt>${e(x.label)}</dt><dd>${e(x.text)}</dd>`;
+  }
+  if (src) fx += `</dl>`;
+
+  return `<!doctype html><html><head><meta charset="utf-8">
+<title>${e(b.name)} character sheet</title>
+<style>
+  @page{margin:16mm}
+  *{box-sizing:border-box}
+  body{font:11pt/1.5 Georgia,"Times New Roman",serif;color:#111;background:#fff;
+       margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1{font-size:22pt;margin:0 0 2pt;letter-spacing:.02em}
+  .sub{font-size:10pt;color:#555;margin:0 0 14pt;
+       padding-bottom:8pt;border-bottom:2px solid #111}
+  h2{font-size:11pt;letter-spacing:.14em;text-transform:uppercase;
+     margin:16pt 0 6pt;padding-bottom:3pt;border-bottom:1px solid #bbb;
+     color:#333;page-break-after:avoid}
+  h3{font-size:10pt;letter-spacing:.12em;text-transform:uppercase;
+     color:#444;margin:10pt 0 4pt;page-break-after:avoid}
+  h4{font-size:9.5pt;letter-spacing:.1em;text-transform:uppercase;color:#666;
+     margin:8pt 0 3pt;page-break-after:avoid}
+  table{border-collapse:collapse;width:100%}
+  th{text-align:left;font-weight:normal;color:#666;width:34%;
+     padding:2.5pt 0;vertical-align:top;font-size:10pt}
+  td{padding:2.5pt 0;vertical-align:top}
+  /* Two columns for the summary block, so the sheet opens compactly. */
+  .top{display:flex;gap:22pt;align-items:flex-start}
+  .top > div{flex:1;min-width:0}
+  .attrs{width:100%;border-collapse:collapse}
+  .attrs td{text-align:right;font-variant-numeric:tabular-nums}
+  .attrs td:first-child{text-align:left;color:#666}
+  .cat{page-break-inside:auto}
+  .tree{page-break-inside:avoid;margin:0 0 7pt}
+  .th{display:flex;justify-content:space-between;align-items:baseline;
+      border-bottom:1px dotted #ccc;padding-bottom:1.5pt}
+  .th span{font-size:9pt;color:#666}
+  .tree ul{margin:3pt 0 0;padding:0 0 0 14pt;
+           columns:2;column-gap:18pt;font-size:10pt}
+  .tree li{margin:0 0 1pt;break-inside:avoid}
+  .tree i{color:#666;font-style:normal;font-size:9pt}
+  dl{margin:0 0 6pt}
+  dt{font-weight:bold;font-size:10pt;margin-top:4pt}
+  dd{margin:0;font-size:10pt;color:#333}
+  .foot{margin-top:16pt;padding-top:6pt;border-top:1px solid #bbb;
+        font-size:8.5pt;color:#777}
+  /* The build link is a long opaque hash. Printed in full it becomes a dense
+     four-line block that dominates the footer, so it is clamped to two lines
+     -- the sheet is for reading, and the link is recoverable from the app. */
+  .foot a{color:#777;word-break:break-all;display:-webkit-box;
+          -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .none{color:#777;font-style:italic}
+</style></head><body>
+  <h1>${e(b.name)}</h1>
+  <p class="sub">Level ${b.level} · ${e(b.race)} · ${e(b.cls)}${
+    b.trait !== "not chosen" ? " · " + e(b.trait) : ""}</p>
+
+  <div class="top">
+    <div>
+      <h2>Character</h2>
+      <table>
+        ${row("Level", String(b.level))}
+        ${row("Race", b.race)}
+        ${row("Class", b.cls)}
+        ${row("Trait", b.trait)}
+        ${row("Standing Stone", b.stone)}
+        ${row("Devotion", b.deity + (b.deityVariant ? ` (as ${b.deityVariant})` : ""))}
+        ${b.survival ? row("Survival", `On, -${b.survivalPenalty} carry weight`) : ""}
+      </table>
+    </div>
+    <div>
+      <h2>Attributes</h2>
+      <table class="attrs">
+        <tr><td>Health</td><td>${b.attrs.h}</td></tr>
+        <tr><td>Magicka</td><td>${b.attrs.m}</td></tr>
+        <tr><td>Stamina</td><td>${b.attrs.s}</td></tr>
+        ${b.carry != null ? `<tr><td>Carry weight</td><td>${b.carry}${
+          b.survivalPenalty ? ` <small>(survival -${b.survivalPenalty})</small>` : ""
+        }</td></tr>` : ""}
+        <tr><td>Level-ups</td><td>${b.picks.h}H / ${b.picks.m}M / ${b.picks.s}S</td></tr>
+        ${b.firstPick ? `<tr><td>First choice</td><td>${e(b.firstPick.stat)}
+          <small>(+${b.firstPick.gain} not +${b.firstPick.other})</small></td></tr>` : ""}
+        <tr><td>Perk points</td><td>${b.spent} / ${b.avail}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Perks: ${b.spent} spent, ${b.left} remaining</h2>
+  ${cats || `<p class="none">No perks selected.</p>`}
+
+  ${b.effects.length ? `<h2>Active Effects</h2>${fx}` : ""}
+
+  <p class="foot">${e(b.modlist)} · generated by Dragonborn Forge<br>
+    <a href="${e(b.url)}">${e(b.url)}</a></p>
+</body></html>`;
+}
+
+// Print via a hidden iframe: a popup window is blocked from file:// in some
+// browsers, and printing the live page would print the interactive UI.
+function printBuild(){
+  const old = document.getElementById("printFrame");
+  if (old) old.remove();
+  const f = document.createElement("iframe");
+  f.id = "printFrame";
+  f.setAttribute("aria-hidden", "true");
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(f);
+  const d = f.contentWindow.document;
+  d.open(); d.write(buildAsPrintHTML()); d.close();
+  const go = () => {
+    try{ f.contentWindow.focus(); f.contentWindow.print(); }
+    catch{ flash("Could not open the print dialog."); }
+  };
+  // Give the iframe a tick to lay out before printing.
+  if (d.readyState === "complete") setTimeout(go, 60);
+  else f.onload = () => setTimeout(go, 60);
+}
+
+// Clipboard needs a secure context and this usually runs from file://, so fall
+// back to the textarea + execCommand path the share button already uses.
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try{ ok = document.execCommand("copy"); }catch{ ok = false; }
+    ta.remove();
+    return ok;
+  }
+}
+
+/* ------------------------------------------------------------ hash i/o - */
+function saveHash(){
+  const picks = [...S.ranks.entries()].map(([f,r]) => r > 1 ? `${f}:${r}` : f).join(",");
+  const parts = [
+    `l${S.level}`,
+    // The name is the only free text in a "|"-delimited format, so it is
+    // encoded per-value. Encoding "|" and "#" is what matters; loadHash
+    // decodes each value individually rather than the whole hash at once,
+    // because decoding first would turn an encoded "|" back into a delimiter.
+    S.name ? `n${encodeURIComponent(S.name)}` : "",
+    S.race ? `r${S.race}` : "",
+    S.cls ? `c${S.cls}` : "",
+    S.trait ? `t${S.trait}` : "",
+    S.stone ? `s${S.stone}` : "",
+    S.deity ? `d${S.deity}` : "",
+    S.survival ? "v1" : "",
+    S.skill ? `k${S.skill}` : "",
+    S.picks.length ? `a${S.picks.join("")}` : "",
+    picks ? `p${picks}` : "",
+  ].filter(Boolean);
+  history.replaceState(null, "", "#" + parts.join("|"));
+}
+
+function loadHash(){
+  // NOT decodeURIComponent'd up front: the hash is "|"-delimited and the name
+  // may legitimately contain an encoded "|", which a whole-string decode would
+  // turn back into a delimiter and split on. Split first, decode each value.
+  const h = location.hash.slice(1);
+  if (!h) return;
+  const dec = v => { try { return decodeURIComponent(v); } catch { return v; } };
+  for (const part of h.split("|")){
+    const k = part[0], v = part.slice(1);
+    if (k === "l") S.level = Math.max(1, Math.min(maxLevel, +v || 1));
+    else if (k === "n") S.name = dec(v).slice(0, 40);
+    else if (k === "r") S.race = dec(v);
+    else if (k === "c") S.cls = dec(v);
+    else if (k === "t") S.trait = dec(v);
+    else if (k === "s") S.stone = dec(v);
+    else if (k === "d") S.deity = dec(v);
+    else if (k === "v") S.survival = v === "1";
+    else if (k === "k") S.skill = dec(v);
+    else if (k === "a"){
+      // New form is an ordered string like "hhmsh"; the old "h-m-s" counts
+      // are still accepted so existing links keep working.
+      if (v.includes("-")){
+        const [a,b,c] = v.split("-").map(Number);
+        S.picks = [].concat(Array(a||0).fill("h"), Array(b||0).fill("m"),
+                            Array(c||0).fill("s"));
+      } else {
+        S.picks = v.split("").filter(x => "hms".includes(x));
+      }
+    }
+    else if (k === "p"){
+      v.split(",").forEach(tok => {
+        const [fid, r] = tok.split(":");
+        if (PERK.has(fid)) S.ranks.set(fid, Math.max(1, +r || 1));
+      });
+    }
+  }
+}
+
+/* ------------------------------------------------- chooser: events ----- */
+function wireChooser(){
+  const modal = document.getElementById("cmodal");
+
+  modal.addEventListener("click", e => {
+    // Reset confirmation owns the modal while it is open.
+    if (ASK.open){
+      if (e.target.closest("[data-askyes]")){ doReset(); return; }
+      // Cancel, the X, or the scrim all back out.
+      if (e.target.closest("[data-askno]") || e.target.closest("[data-cclose]")
+          || e.target.classList.contains("scrim")){ closeAsk(); return; }
+      return;
+    }
+
+    // Cancel / X / scrim.
+    if (e.target.closest("[data-cclose]")){ closeChooser(); return; }
+
+    // Pick an option: highlight only. Nothing is committed until Choose/Next,
+    // which is what lets the detail pane preview consequences safely.
+    const opt = e.target.closest("[data-opt]");
+    if (opt){
+      CH.pick = opt.dataset.opt;
+      CH.confirm = false;
+      renderChooser();
+      const el = document.querySelector("#cList .copt.on");
+      if (el) el.focus();
+      return;
+    }
+
+    if (e.target.closest("[data-commit]")){
+      // A pick that costs a perk point asks once before taking it.
+      const cost = pickCost(CH.field, CH.pick);
+      if (cost && !CH.confirm){
+        CH.confirm = true;
+        renderChooser();
+        const btn = document.querySelector("#csheet [data-commit]");
+        if (btn) btn.focus();
+        return;
+      }
+      const over = cost ? cost.over : 0;
+      commitPick();
+      closeChooser();
+      renderHints();
+      render();
+      if (over) flash(`Now ${over} perk point${over === 1 ? "" : "s"} over budget.`);
+      return;
+    }
+  });
+
+  // Typing in the name box or the filter.
+  modal.addEventListener("input", e => {
+    if (e.target.id === "cNameInput"){ CH.pick = e.target.value; return; }
+    if (e.target.id === "cFilter"){
+      CH.filter = e.target.value;
+      renderChooser();
+      const f = document.getElementById("cFilter");
+      // Re-render replaces the input, so restore focus and caret.
+      if (f){ f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+    }
+  });
+
+  modal.addEventListener("keydown", e => {
+    // The confirmation traps focus and Escape the same way, but has no list
+    // to arrow through -- Escape cancels, which is the safe direction.
+    if (ASK.open){
+      if (e.key === "Escape"){ e.preventDefault(); closeAsk(); return; }
+      if (e.key === "Tab") trapFocus(e, modal);
+      return;
+    }
+
+    if (!CH.field) return;
+
+    // Enter in the name box commits, rather than submitting nothing.
+    if (e.target.id === "cNameInput" && e.key === "Enter"){
+      e.preventDefault();
+      commitPick(); closeChooser(); renderHints(); render();
+      return;
+    }
+
+    // Arrow keys walk the option list; the detail pane and preview follow.
+    if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+      const opts = [...modal.querySelectorAll(".copt")];
+      if (!opts.length) return;
+      e.preventDefault();
+      const i = opts.findIndex(o => o.classList.contains("on"));
+      const n = e.key === "ArrowDown"
+        ? Math.min(opts.length - 1, i + 1)
+        : Math.max(0, i - 1);
+      CH.pick = opts[n].dataset.opt;
+      CH.confirm = false;
+      renderChooser();
+      const el = document.querySelector("#cList .copt.on");
+      if (el) el.focus();
+      scrollPickIntoView();
+      return;
+    }
+
+    if (e.key === "Escape"){
+      e.preventDefault();
+      closeChooser();
+      return;
+    }
+
+    // Focus trap. Absent on the tree modal, but the chooser is keyboard-driven
+    // and Tab must not walk out into the page behind it.
+    if (e.key === "Tab") trapFocus(e, modal);
+  });
+}
+
+// Keep Tab inside `root`. Shared by the chooser and the reset confirmation.
+function trapFocus(e, root){
+  const f = [...root.querySelectorAll(
+    'button:not([disabled]), input, [href], [tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first){
+    e.preventDefault(); last.focus();
+  } else if (!e.shiftKey && document.activeElement === last){
+    e.preventDefault(); first.focus();
+  }
+}
+
+/* ------------------------------------------------------------- events -- */
+function wire(){
+  const lvl = document.getElementById("lvl");
+  lvl.max = maxLevel;
+  lvl.addEventListener("input", () => {
+    S.level = +lvl.value;
+    document.getElementById("lvlOut").textContent = S.level;
+    // Dropping the level can leave perks or level-up choices unaffordable.
+    // Nothing is refunded: render() reports the overspend and the user
+    // decides whether to raise the level again or give something up.
+    render();
+  });
+
+  // Field rows open their chooser. One handler for all six.
+  document.getElementById("fieldrows").addEventListener("click", e => {
+    const row = e.target.closest("[data-choose]");
+    if (!row) return;
+    openChooser(row.dataset.choose);
+  });
+
+  const sbox = document.getElementById("survival");
+  if (sbox) sbox.addEventListener("change", e => {
+    S.survival = e.target.checked;
+    render();          // carry weight is derived, so a repaint is enough
+  });
+
+  wireChooser();
+
+  document.querySelectorAll(".pick button").forEach(b => {
+    b.addEventListener("click", () => {
+      if (attrSpent() >= attrAvail()) return;
+      S.picks.push(b.dataset.at); render();
+    });
+    b.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      const k = b.dataset.at;
+      const idx = S.picks.lastIndexOf(k);
+      if (idx >= 0){ S.picks.splice(idx, 1); render(); }
+    });
+  });
+
+  // Cards: click one to open its tree.
+  const groups = document.getElementById("groups");
+  groups.addEventListener("click", e => {
+    const card = e.target.closest(".skillcard");
+    if (!card) return;
+    openSkill(card.dataset.skill);
+  });
+
+  // Perk click: left = buy next rank, right = refund one rank.
+  const trees = document.getElementById("modal");
+  const hit = e => {
+    const g = e.target.closest(".pnode");
+    if (!g) return null;
+    return PERK.get(g.dataset.fid);
+  };
+
+  // Hover card: describes the perk and why it is or isn't takeable.
+  const showTip = (g) => {
+    const entry = PERK.get(g.dataset.fid);
+    if (!entry) return;
+    const {p, skill} = entry;
+    const tip = document.getElementById("tip");
+    if (!tip) return;
+    const have = S.ranks.get(p.formId) || 0;
+    const unmet = p.prerequisites.filter(q => !(S.ranks.get(q.formId) > 0));
+
+    // Show every rank with its own text and gate, marking which you own and
+    // which is next. Rank 2 usually restates the numbers rather than stacking,
+    // so the difference is worth reading before spending a point.
+    const descs = p.rankDescriptions || [p.description];
+    const body = p.ranks > 1
+      ? `<div class="ranks">` + descs.map((t, i) => {
+          const owned = i < have, next = i === have;
+          return `<div class="rk${owned ? " owned" : ""}${next ? " next" : ""}">`
+               + `<span class="mark">${owned ? "●" : "○"}</span>`
+               + `<span class="lv">${p.rankSkillLevels[i]}</span>`
+               + `<span class="t">${esc(t)}</span></div>`;
+        }).join("") + `</div>`
+      : `<div class="d">${esc(descs[0])}</div>`;
+
+    const gate = p.rankSkillLevels[Math.min(have, p.rankSkillLevels.length - 1)];
+    const req = [`${esc(skill.name)} ${gate}`];
+    if (p.ranks > 1) req.push(`rank ${have} of ${p.ranks}`);
+    if (unmet.length && !prereqsMet(p)){
+      const join = p.prerequisiteLogic === "any" ? " or " : " + ";
+      req.push(`<span class="miss">needs ${unmet.map(q => esc(q.name)).join(join)}</span>`);
+    }
+    tip.innerHTML = `<b>${esc(p.name)}</b>${body}`
+                  + `<div class="r">${req.join(" · ")}</div>`;
+
+
+    // Fixed to the viewport, so it is never clipped by the tree card. Flip
+    // above the node when there is not enough room below.
+    tip.classList.add("show");
+    const nb = g.getBoundingClientRect();
+    const tb = tip.getBoundingClientRect();
+    const gap = 10;
+    let left = nb.left + nb.width / 2 - tb.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tb.width - 8));
+    let top = nb.bottom + gap;
+    if (top + tb.height > window.innerHeight - 8){
+      top = nb.top - tb.height - gap;
+      if (top < 8) top = Math.max(8, window.innerHeight - tb.height - 8);
+    }
+    tip.style.left = left + "px";
+    tip.style.top  = top + "px";
+  };
+  const hideTips = hideTip;
+
+  trees.addEventListener("mouseover", e => {
+    const g = e.target.closest(".pnode");
+    if (g) showTip(g);
+  });
+  trees.addEventListener("mouseout", e => {
+    if (e.target.closest(".pnode")) hideTips();
+  });
+  trees.addEventListener("focusin", e => {
+    const g = e.target.closest(".pnode");
+    if (g) showTip(g);
+  });
+  trees.addEventListener("focusout", hideTips);
+
+  // Left click and Enter/Space both buy; right click and Shift+Enter both
+  // refund. Shared here so the two input paths cannot drift apart.
+  const tryBuy = p => {
+    // At max rank there is nothing to buy, so this does nothing. Removing is
+    // the refund action's job; making buy double as a refund meant a mis-click
+    // destroyed a finished perk.
+    if ((S.ranks.get(p.formId) || 0) >= p.ranks) return;
+    if (!prereqsMet(p)) return flash(`${p.name} needs ${prereqNames(p)}.`);
+    if (pointsSpent() >= pointsAvailable())
+      return flash(`No perk points left at level ${S.level}.`);
+    hideTips();
+    buy(p);
+  };
+
+  trees.addEventListener("click", e => {
+    const entry = hit(e);
+    if (entry) tryBuy(entry.p);
+  });
+  trees.addEventListener("contextmenu", e => {
+    const entry = hit(e); if (!entry) return;
+    e.preventDefault();
+    hideTips();
+    sell(entry.p);
+  });
+  trees.addEventListener("keydown", e => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const entry = hit(e); if (!entry) return;
+    e.preventDefault();
+    if (e.shiftKey) sell(entry.p); else tryBuy(entry.p);
+  });
+
+  // Modal: close via the X, the scrim, or Esc; switch trees via the nav chips.
+  const modal = document.getElementById("modal");
+  modal.addEventListener("click", e => {
+    if (e.target.closest("[data-close]")){ closeModal(); return; }
+    if (e.target.closest("[data-clear]")){
+      const s = modalSkill();
+      if (!s) return;
+      const freed = clearTree(s);
+      if (!freed) return;
+      hideTip();
+      afterSpend();
+      flash(`Cleared ${s.name}: ${freed} point${freed === 1 ? "" : "s"} refunded.`);
+    }
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape" || !S.open) return;
+    e.preventDefault();
+    closeModal();
+  });
+
+  document.getElementById("attrReset").addEventListener("click", () => {
+    if (!S.picks.length) return;
+    S.picks = [];
+    render();
+  });
+
+  // Reset clears every choice back to "not chosen". It is destructive and has
+  // no undo, so it confirms first; doReset() does the work.
+  document.getElementById("reset").addEventListener("click", askReset);
+
+  // Pasting a build link while the page is already open changes only the hash,
+  // which is a same-document navigation -- boot() never runs again, so the new
+  // build would be silently ignored. Re-read it and re-render.
+  window.addEventListener("hashchange", () => {
+    S.ranks.clear();
+    S.picks = [];
+    // loadHash only overwrites what the hash names, so clear the fields first
+    // or a link that omits a field would inherit the previous build's value.
+    clearChoices();
+    loadHash();
+    setLevelControl(S.level);
+    renderHints();
+    render();
+  });
+
+  document.getElementById("share").addEventListener("click", async () => {
+    saveHash();
+    const btn = document.getElementById("share");
+    const ok = await copyText(location.href);
+    btn.textContent = ok ? "Link copied" : "Copy from address bar";
+    setTimeout(() => btn.textContent = "Copy build link", 1800);
+  });
+
+  document.getElementById("printBuild").addEventListener("click", printBuild);
+
+  document.getElementById("textBuild").addEventListener("click", async () => {
+    const btn = document.getElementById("textBuild");
+    const ok = await copyText(buildAsText());
+    btn.textContent = ok ? "Copied" : "Copy failed";
+    setTimeout(() => btn.textContent = "Copy as text", 1800);
+  });
+}
+
+/* --------------------------------------------------------------- boot -- */
+function boot(){
+  loadHash();
+
+  setLevelControl(S.level);
+
+  document.getElementById("stamp").textContent =
+    `${P.modlist} · ${P.learnablePerkCount} perks · ${L.totals.totalPerkPoints} points at level ${maxLevel}`;
+  // Was the footer's left half. The interaction hint that sat on its right is
+  // dropped -- the perk modal already spells out click/right-click.
+  document.getElementById("rules").textContent =
+    `Skill floor ${BASE_SKILL} · caps ${L.skillCaps[0].skillCap} (formula ${L.skillCaps[0].formulaCap}) · legendary ${L.legendary.enabled ? "on" : "off"}`;
+
+  renderHints();
+  wire();
+  render();
+  // Nothing opens on load. Every field -- including race and class -- starts
+  // at "not chosen" and is filled in by clicking its row, exactly like the
+  // standing stone and the devotion. The page is browsable before any choice
+  // is made, so the perk trees can be explored first.
+}
+boot();
+</script>
