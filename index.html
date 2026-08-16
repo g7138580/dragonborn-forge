@@ -810,6 +810,14 @@ h1,h2,h3{font-weight:var(--f-weight-display);letter-spacing:.1em}
           </span>
           <span class="hint" id="survivalHint"></span>
         </label>
+        <label class="fieldrow toggle" id="oghmaRow">
+          <span class="k">Oghma Infinium</span>
+          <span class="v">
+            <input type="checkbox" id="oghma">
+            <span id="oghmaLabel">Not read</span>
+          </span>
+          <span class="hint" id="oghmaHint"></span>
+        </label>
       </div>
       <!-- Outside the grid: as a cell this wrapped to three lines and stretched
            its whole row, which was most of the card's dead space. -->
@@ -911,6 +919,9 @@ const S = {
   // Survival Mode. Only its carry-weight penalty is modelled -- hunger, cold
   // and fast travel are gameplay state, not build choices.
   survival: false,
+  // Oghma Infinium read. Grants 2 perk points and one of three XP paths; only
+  // the perk points are modelled, since XP rate is not a build choice.
+  oghma: false,
   ranks: new Map(),          // formId -> ranks bought (>=1)
   // One entry per level-up taken, in order: "h" | "m" | "s". The Nth entry is
   // the choice made on reaching level N+1, and the gain depends on THAT level
@@ -950,6 +961,7 @@ const CHOICE_FIELDS = ["name", "race", "cls", "trait", "stone", "deity"];
 function clearChoices(){
   CHOICE_FIELDS.forEach(f => { S[f] = ""; });
   S.survival = false;
+  S.oghma = false;
 }
 
 // The level slider and its readout always move together.
@@ -972,10 +984,19 @@ function syncScrollLock(){
 // Perk points granted by the character's level, plus script-granted bonuses.
 // Two exist, both calling Game.AddPerkPoints(1) at game start, so both are
 // available even at level 1: the Imperial race and the Faithless trait.
+// Perk points the Oghma Infinium grants when read. Artificer overhauls the
+// book: it gives 2 perk points plus a choice of Path of Might / Magic / Shadow
+// (+20% experience in combat / magic / stealth skills). The XP paths are not
+// modelled, since levelling speed is not a build choice, but the points are
+// real and stack with the race and trait bonuses.
+const OGHMA_PERK_POINTS = 2;
+
 function bonusPerkPoints(st_ = S){
   const r = C.races.find(x => x.editorId === st_.race);
   const t = (C.traits || []).find(x => x.trait === st_.trait);
-  return ((r && r.bonusPerkPoints) || 0) + ((t && t.bonusPerkPoints) || 0);
+  return ((r && r.bonusPerkPoints) || 0)
+       + ((t && t.bonusPerkPoints) || 0)
+       + (st_.oghma ? OGHMA_PERK_POINTS : 0);
 }
 function pointsAvailable(st_ = S){
   const row = perLevel[Math.min(st_.level, maxLevel) - 1];
@@ -1266,20 +1287,28 @@ function activeEffects(st_ = S){
   // actually chosen. Previously the UI only counted the variants and always
   // showed the base text, so Tall Papa's devotion was never the one in effect.
   const dv = dt ? deityDevotion(dt, st_.stone) : null;
-  // A devotion only applies with RANK 2 of the Pilgrim perk. Without it the
-  // deity is still a chosen allegiance, but it grants nothing -- so the effect
-  // is listed as inactive rather than folded into the totals.
+  // A devotion only applies with RANK 2 of its gating perk: Pilgrim for an
+  // Aedra, Cultist for a Daedra. Without it the deity is still a chosen
+  // allegiance but grants nothing, so the effect is listed as inactive rather
+  // than folded into the totals.
+  const gate = devotionPerk(dt);
+  const rank = devotionRank(dt, st_);
   if (dv){
-    if (pilgrimRank(st_) >= 2) add("Devotion", dv.name, dv.description);
+    if (rank >= 2) add("Devotion", dv.name, dv.description);
     else out.push({source: "Devotion", label: dv.name, text: strip(dv.description),
-                   mods: [], inactive: "needs Pilgrim rank 2"});
+                   mods: [], inactive: `needs ${gate.name} rank 2`});
   }
-  // The shrine blessing used to live only in the deity hint. It is temporary
-  // (8h) rather than permanent, so it is listed but kept out of the maths --
-  // fxParse would otherwise fold it into the derived totals.
+  // The shrine blessing. Rank 1 of the same perk doubles it, so its modifiers
+  // are scaled rather than shown flat. Blessings do feed the derived totals.
   if (dt && dt.blessing){
-    out.push({source: "Devotion", label: `Shrine: ${dt.blessing.name}`,
-              text: strip(dt.blessing.description), mods: []});
+    const doubled = rank >= 1;
+    const base = fxParse(dt.blessing.description);
+    out.push({
+      source: "Devotion",
+      label: `Shrine: ${dt.blessing.name}${doubled ? " (doubled)" : ""}`,
+      text: strip(dt.blessing.description),
+      mods: doubled ? base.map(([k, v]) => [k, v * 2]) : base,
+    });
   }
 
   // Bought perks contribute to the DERIVED STATS but are deliberately not
@@ -1315,25 +1344,42 @@ function activeEffects(st_ = S){
   return out;
 }
 
-/* ----------------------------------------------------------- pilgrim ----
-   Pilgrim (Adamant, Restoration) is a 2-rank perk gated at Restoration 30/60.
-   A devotion only takes effect at RANK 2 -- rank 1 only strengthens the
-   temporary shrine blessings. Without rank 2 a chosen deity is an allegiance
-   that grants nothing, so activeEffects() lists it as inactive and keeps it
-   out of the derived totals.
+/* ------------------------------------------------- devotion perks -------
+   Two parallel 2-rank perks gate religion, one per deity type:
+
+     Aedra   -> Pilgrim (Adamant, Restoration, gated 30/60)
+     Daedra  -> Cultist (Adamant, Conjuration, gated 30/60)
+
+   Rank 1 doubles that type's shrine blessings; RANK 2 is what makes the
+   devotion itself apply. Without rank 2 a chosen deity is an allegiance that
+   grants nothing, so activeEffects() lists it as inactive and keeps it out of
+   the derived totals.
 
    Resolved by FormID, not by name: display names are not stable across mod
    updates, and joining on one is the bug PROJECT.md documents for class
-   skills. The editor ID is used only to FIND the FormID once, at load.
+   skills. The editor IDs are used only to FIND the FormIDs once, at load.
 ======================================================================== */
-const PILGRIM_FID = (() => {
+const perkFidByEditorId = (editorId) => {
   for (const s of P.skills)
     for (const p of s.perks)
-      if (p.editorId === "MAG_Pilgrim30") return p.formId;
+      if (p.editorId === editorId) return p.formId;
   return null;
-})();
-const pilgrimRank = (st_ = S) =>
-  PILGRIM_FID ? (st_.ranks.get(PILGRIM_FID) || 0) : 0;
+};
+const DEVOTION_PERKS = {
+  Aedra:  {fid: perkFidByEditorId("MAG_Pilgrim30"), name: "Pilgrim"},
+  Daedra: {fid: perkFidByEditorId("MAG_Cultist30"), name: "Cultist"},
+};
+
+// The gating perk for a deity, by its type. Anything unrecognised falls back
+// to Pilgrim, which is the Aedra case and the larger half of the roster.
+const devotionPerk = (dt) =>
+  DEVOTION_PERKS[(dt && dt.type) || "Aedra"] || DEVOTION_PERKS.Aedra;
+
+// Rank held in whichever perk gates this deity.
+const devotionRank = (dt, st_ = S) => {
+  const p = devotionPerk(dt);
+  return p && p.fid ? (st_.ranks.get(p.fid) || 0) : 0;
+};
 
 /* ---------------------------------------------------------- survival ----
    Survival Mode subtracts a flat amount from carry weight while enabled. The
@@ -1355,7 +1401,7 @@ function withField(field, value){
   const h = {
     level: S.level, race: S.race, cls: S.cls, trait: S.trait,
     stone: S.stone, deity: S.deity, ranks: S.ranks, picks: S.picks,
-    survival: S.survival,
+    survival: S.survival, oghma: S.oghma,
   };
   if (field in h) h[field] = value;
   return h;
@@ -2211,6 +2257,18 @@ function renderFields(){
     }
   }
 
+  const orow = document.getElementById("oghmaRow");
+  if (orow){
+    const box = document.getElementById("oghma");
+    if (box) box.checked = !!S.oghma;
+    orow.classList.toggle("on", !!S.oghma);
+    document.getElementById("oghmaLabel").textContent =
+      S.oghma ? "Read" : "Not read";
+    document.getElementById("oghmaHint").textContent = S.oghma
+      ? `+${OGHMA_PERK_POINTS} perk points, and one XP path`
+      : `worth +${OGHMA_PERK_POINTS} perk points`;
+  }
+
   // The masthead is fixed; the name goes in the browser title bar, so a tab
   // or a bookmark identifies the character without the page losing its name.
   document.title = S.name
@@ -2383,11 +2441,15 @@ function detailDeity(d){
     }
   }
   if (d.blessing){
-    h += `<div class="sect">Shrine blessing (temporary, 8h)</div>`
+    // Named per deity type: an Aedra's blessings scale with Pilgrim, a
+    // Daedra's with Cultist.
+    const g = devotionPerk(d).name;
+    h += `<div class="sect">Shrine blessing (8h)</div>`
       + `<div class="sub"><b>${esc(d.blessing.name)}</b>`
       + `<span>${esc(strip(d.blessing.description || ""))}</span></div>`
-      + `<div class="foot">Blessings are temporary, so they are listed but kept
-         out of the derived totals.</div>`;
+      + `<div class="foot">${devotionRank(d) >= 1
+          ? `Doubled by ${esc(g)} rank 1.`
+          : `${esc(g)} rank 1 doubles this.`}</div>`;
   }
   return h;
 }
@@ -2711,6 +2773,8 @@ function buildSummary(){
     name: S.name || "Unnamed",
     survival: !!S.survival,
     survivalPenalty: carryPen,
+    oghma: !!S.oghma,
+    oghmaPoints: OGHMA_PERK_POINTS,
     carry: carryBase ? carryBase + (fx.carry || 0) - carryPen : null,
     level: S.level,
     race: fieldDisplay("race") || "not chosen",
@@ -2764,6 +2828,7 @@ function buildAsText(){
   L.push(`${pad("Standing Stone")}${b.stone}`);
   L.push(`${pad("Devotion")}${b.deity}${b.deityVariant ? ` (as ${b.deityVariant})` : ""}`);
   if (b.survival) L.push(`${pad("Survival")}On (-${b.survivalPenalty} carry weight)`);
+  if (b.oghma) L.push(`${pad("Oghma Infinium")}Read (+${b.oghmaPoints} perk points)`);
   L.push("");
   L.push("ATTRIBUTES");
   L.push(thin);
@@ -2921,6 +2986,7 @@ function buildAsPrintHTML(){
         ${row("Standing Stone", b.stone)}
         ${row("Devotion", b.deity + (b.deityVariant ? ` (as ${b.deityVariant})` : ""))}
         ${b.survival ? row("Survival", `On, -${b.survivalPenalty} carry weight`) : ""}
+        ${b.oghma ? row("Oghma Infinium", `Read, +${b.oghmaPoints} perk points`) : ""}
       </table>
     </div>
     <div>
@@ -3006,6 +3072,7 @@ function saveHash(){
     S.stone ? `s${S.stone}` : "",
     S.deity ? `d${S.deity}` : "",
     S.survival ? "v1" : "",
+    S.oghma ? "g1" : "",
     S.skill ? `k${S.skill}` : "",
     S.picks.length ? `a${S.picks.join("")}` : "",
     picks ? `p${picks}` : "",
@@ -3030,6 +3097,7 @@ function loadHash(){
     else if (k === "s") S.stone = dec(v);
     else if (k === "d") S.deity = dec(v);
     else if (k === "v") S.survival = v === "1";
+    else if (k === "g") S.oghma = v === "1";
     else if (k === "k") S.skill = dec(v);
     else if (k === "a"){
       // New form is an ordered string like "hhmsh"; the old "h-m-s" counts
@@ -3198,6 +3266,14 @@ function wire(){
   if (sbox) sbox.addEventListener("change", e => {
     S.survival = e.target.checked;
     render();          // carry weight is derived, so a repaint is enough
+  });
+
+  // Unchecking the Oghma can leave the build over budget. Nothing is refunded;
+  // renderBudget() reports it, as with any other budget change.
+  const obox = document.getElementById("oghma");
+  if (obox) obox.addEventListener("change", e => {
+    S.oghma = e.target.checked;
+    render();
   });
 
   wireChooser();

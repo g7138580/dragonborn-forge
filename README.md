@@ -14,7 +14,7 @@ across the 18 skill trees, and see the resulting attributes and effects.
 - **Live effects**: race powers, class effects, traits, standing stones and
   Pilgrim devotions are parsed from the mods' own description text, so bonuses
   and penalties both feed the derived stats.
-- **Survival Mode** toggle for the carry weight penalty.
+- **Survival Mode** and **Oghma Infinium** toggles.
 - **Share a build** with the link button. The whole build lives in the URL.
 - **Print or export** a character sheet as PDF or plain text.
 
@@ -24,10 +24,10 @@ loaded, and keeps your build in the address bar.
 ## Notes
 
 - Skill levels derive from the perks you buy, floored by your class.
-- A devotion only takes effect with rank 2 of the Pilgrim perk.
+- A devotion takes effect at rank 2 of its gating perk: Pilgrim for the Aedra,
+  Cultist for the Daedra. Rank 1 doubles that type's shrine blessings.
 - Lowering your level does not refund anything. The build is flagged as over
   budget and left alone for you to fix.
-- Shrine blessings are temporary, so they are listed but kept out of the totals.
 
 ## Data
 
