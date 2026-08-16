@@ -3061,11 +3061,14 @@ function saveHash(){
   const picks = [...S.ranks.entries()].map(([f,r]) => r > 1 ? `${f}:${r}` : f).join(",");
   const parts = [
     `l${S.level}`,
-    // The name is the only free text in a "|"-delimited format, so it is
-    // encoded per-value. Encoding "|" and "#" is what matters; loadHash
+    // The name is the only free text in a delimited format, so it is encoded
+    // per-value. Encoding the delimiter and "#" is what matters; loadHash
     // decodes each value individually rather than the whole hash at once,
-    // because decoding first would turn an encoded "|" back into a delimiter.
-    S.name ? `n${encodeURIComponent(S.name)}` : "",
+    // because decoding first would turn an encoded delimiter back into one.
+    // A "|" inside the name would encode to "%7C" and be indistinguishable
+    // from the delimiter, so it is escaped to "%7c" first -- same byte after
+    // decoding, but the split below is case-sensitive and leaves it alone.
+    S.name ? `n${encodeURIComponent(S.name).replace(/%7C/g, "%7c")}` : "",
     S.race ? `r${S.race}` : "",
     S.cls ? `c${S.cls}` : "",
     S.trait ? `t${S.trait}` : "",
@@ -3077,17 +3080,23 @@ function saveHash(){
     S.picks.length ? `a${S.picks.join("")}` : "",
     picks ? `p${picks}` : "",
   ].filter(Boolean);
-  history.replaceState(null, "", "#" + parts.join("|"));
+  // Joined with an encoded "|". A raw "|" is not a legal URI character, so
+  // chat clients that autolink (Discord, Slack) stop scanning at the first one
+  // and the shared link arrives truncated. "%7C" keeps the whole hash inside
+  // the link. loadHash splits on both forms so older links still load.
+  history.replaceState(null, "", "#" + parts.join("%7C"));
 }
 
 function loadHash(){
-  // NOT decodeURIComponent'd up front: the hash is "|"-delimited and the name
-  // may legitimately contain an encoded "|", which a whole-string decode would
-  // turn back into a delimiter and split on. Split first, decode each value.
+  // NOT decodeURIComponent'd up front: the hash is delimited by "%7C" and the
+  // name may legitimately contain an encoded "|", which a whole-string decode
+  // would turn back into a delimiter and split on. Split first, decode each
+  // value. Both the current "%7C" and the raw "|" older links used are
+  // accepted; the split is case-sensitive so a name's "%7c" survives it.
   const h = location.hash.slice(1);
   if (!h) return;
   const dec = v => { try { return decodeURIComponent(v); } catch { return v; } };
-  for (const part of h.split("|")){
+  for (const part of h.split(/%7C|\|/)){
     const k = part[0], v = part.slice(1);
     if (k === "l") S.level = Math.max(1, Math.min(maxLevel, +v || 1));
     else if (k === "n") S.name = dec(v).slice(0, 40);
